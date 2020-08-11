@@ -33,18 +33,15 @@ process.MessageLogger.cerr.FwkReport = cms.untracked.PSet(
 #                            fileNames = cms.untracked.vstring("/store/mc/RunIIAutumn18MiniAOD/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/90000/8D07021F-FD00-D442-B0E6-9077266B320B.root")
                             #)
 
-#from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIIAutumn18MiniAOD_MINIAODSIM import ZH_HToBB_ZToBB_source
-#process.source = ZH_HToBB_ZToBB_source
+from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIIAutumn18MiniAOD_MINIAODSIM import ZH_HToBB_ZToBB_source
+process.source = ZH_HToBB_ZToBB_source
 
 #from CMSSWTools.TrigTools.ZZTo4bQ01j_5f_TuneCP5_amcatNLO_FXFX_pythia8_RunIIAutumn18MiniAOD_102X_upgrade2018_realistic_v15_ext2_v1 import ZZTo4b_source
 #process.source = ZZTo4b_source
 
-Data2018D_source = cms.Source("PoolSource",
-                              fileNames = cms.untracked.vstring("/store/data/Run2018D/JetHT/MINIAOD/PromptReco-v2/000/320/500/00000/048048EB-EA95-E811-9A1D-FA163ECE26BB.root")
-)
-process.source = Data2018D_source
-
-
+#process.source = cms.Source("PoolSource",
+#                              fileNames = cms.untracked.vstring("/store/data/Run2018D/JetHT/MINIAOD/PromptReco-v2/000/320/500/00000/048048EB-EA95-E811-9A1D-FA163ECE26BB.root")
+#)
 process.TFileService = cms.Service("TFileService", fileName = cms.string (options.outputFile))
 
 
@@ -62,6 +59,7 @@ process.maxEvents = cms.untracked.PSet(
 
 process.triggerStudy = cms.EDAnalyzer("TriggerStudy",           
                                       isMC = cms.bool(options.isMC),
+                                      isBBMC = cms.bool(options.isMC),
                                       trigObjs = cms.InputTag("slimmedPatTrigger"),
                                       trigResults = cms.InputTag("TriggerResults","","HLT"),
                                       filtersToPass = cms.VPSet(
@@ -133,11 +131,6 @@ process.triggerStudy = cms.EDAnalyzer("TriggerStudy",
                                                    histName = cms.string("CaloDeepCSV"),
                                                    denominatorReq = cms.string("hltCaloQuadJet30HT320"),
                                                ),
-                                          
-                                          cms.PSet(filterName = cms.string("hltBTagCaloDeepCSVp17Double"), 
-                                                   histName = cms.string("CaloDeepCSV"),
-                                                   denominatorReq = cms.string("hltCaloQuadJet30HT320"),
-                                               ),
 
                                           cms.PSet(filterName = cms.string("hltPFCentralJetLooseIDQuad30"),
                                                    histName = cms.string("PF30"),
@@ -168,29 +161,66 @@ process.triggerStudy = cms.EDAnalyzer("TriggerStudy",
                                                    histName = cms.string("PFDeepCSV"),
                                                    denominatorReq = cms.string("hltPFCentralJetsLooseIDQuad30HT330"),
                                                ),
-
+                                          
                                       ),
                                       hltPreSelection = cms.vstring(),
+                                      offlinePreSelection = cms.PSet(),
+                                      
                                       pathsToPass = cms.vstring("HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5_v",),
                                       jets = cms.InputTag("slimmedJets"),
                                       truthJets = cms.InputTag("slimmedGenJets"),
                                       truthParts = cms.InputTag("prunedGenParticles")
 )
 
-process.triggerStudyHT180 = process.triggerStudy.clone()
-process.triggerStudyHT180.hltPreSelection = cms.vstring("HLT_PFHT180_v")
 
-process.triggerStudyHT250 = process.triggerStudy.clone()
-process.triggerStudyHT250.hltPreSelection = cms.vstring("HLT_PFHT250_v")
+process.triggerStudyPassNJet = process.triggerStudy.clone()
+process.triggerStudyPassNJet.offlinePreSelection = cms.PSet(minNSelJet = cms.uint32(4))
 
-#process.triggerStudyPFJet80 = process.triggerStudy.clone()
-#process.triggerStudyPFJet80.hltPreSelection = cms.vstring("HLT_PFJet80_v")
-#
-#process.triggerStudyPFJet140 = process.triggerStudy.clone()
-#process.triggerStudyPFJet140.hltPreSelection = cms.vstring("HLT_PFJet140_v")
+process.triggerStudyPassPreSel = process.triggerStudy.clone()
+process.triggerStudyPassPreSel.offlinePreSelection = cms.PSet(minNSelJet = cms.uint32(4),
+                                                              minNTagTightJet = cms.uint32(4))
 
 
-process.p = cms.Path(process.triggerStudy + process.triggerStudyHT180 + process.triggerStudyHT250) # + process.triggerStudyPFJet80 + process.triggerStudyPFJet140)
+process.triggerStudyPassPreSelMed = process.triggerStudy.clone()
+process.triggerStudyPassPreSelMed.offlinePreSelection = cms.PSet(minNSelJet = cms.uint32(4),
+                                                                 minNTagMedJet = cms.uint32(4))
+
+process.p = cms.Path(process.triggerStudy + process.triggerStudyPassNJet + process.triggerStudyPassPreSel + process.triggerStudyPassPreSelMed )
+
+hltPreSelection = [("HT180","HLT_PFHT180_v"),
+                   ("HT250","HLT_PFHT250_v")]
+
+
+for hltCut in hltPreSelection:
+
+    #
+    #  All
+    #
+    setattr(process,"triggerStudy"+hltCut[0],process.triggerStudy.clone())
+    getattr(process,"triggerStudy"+hltCut[0]).hltPreSelection = cms.vstring(hltCut[1])
+    process.p *= getattr(process,"triggerStudy"+hltCut[0])
+
+    #
+    #  Pass NJet
+    #
+    setattr(process,"triggerStudyPassNJet"+hltCut[0],process.triggerStudyPassNJet.clone())
+    getattr(process,"triggerStudyPassNJet"+hltCut[0]).hltPreSelection = cms.vstring(hltCut[1])
+    process.p *= getattr(process,"triggerStudyPassNJet"+hltCut[0])
+
+    #
+    #  Pass PreSel
+    #
+    setattr(process,"triggerStudyPassPreSel"+hltCut[0],process.triggerStudyPassPreSel.clone())
+    getattr(process,"triggerStudyPassPreSel"+hltCut[0]).hltPreSelection = cms.vstring(hltCut[1])
+    process.p *= getattr(process,"triggerStudyPassPreSel"+hltCut[0])
+
+    #
+    #  Pass PreSelMed
+    #
+    setattr(process,"triggerStudyPassPreSelMed"+hltCut[0],process.triggerStudyPassPreSelMed.clone())
+    getattr(process,"triggerStudyPassPreSelMed"+hltCut[0]).hltPreSelection = cms.vstring(hltCut[1])
+    process.p *= getattr(process,"triggerStudyPassPreSelMed"+hltCut[0])
+
 
 
 # initialize MessageLogger and output report

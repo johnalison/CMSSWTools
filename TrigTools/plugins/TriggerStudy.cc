@@ -232,7 +232,13 @@ private:
   vector<edm::ParameterSet> filtersToPass_;
   vector<string> pathsToPass_;
   vector<string> hltPreSelection_;
+  edm::ParameterSet offlinePreSelection_;
+  unsigned int minNSelJet_ = 0;
+  unsigned int minNTagMedJet_ = 0;
+  unsigned int minNTagTightJet_ = 0;
+
   bool isMC_;
+  bool isBBMC_;
   vector<edm::ParameterSet> jetTurnOns_;
 
   //trigger results stores whether a given path passed or failed
@@ -247,27 +253,35 @@ private:
   edm::EDGetTokenT<edm::View<reco::GenParticle> > truthPartsToken_;
   edm::Service<TFileService> fs;
 
+  // counters
+  unsigned int NEvents_all = 0;
+  unsigned int NEvents_passHLTPreSelection = 0;
+  unsigned int NEvents_passOfflinePreSelection = 0;
+  
+
   struct eventHists {
 
-    TH1F* h_mBB;
-    TH1F* h_pTBB;
-    TH1F* h_nSelJets;
-    TH1F* h_hT;    
-    TH1F* h_hT30;    
-    TH1F* h_hT_s;    
-    TH1F* h_hT30_s;    
+    TH1F* h_mBB      = nullptr;
+    TH1F* h_pTBB     = nullptr;
+    TH1F* h_nSelJets = nullptr;
+    TH1F* h_hT       = nullptr;    
+    TH1F* h_hT30     = nullptr;    
+    TH1F* h_hT_s     = nullptr;    
+    TH1F* h_hT30_s   = nullptr;    
 
-    eventHists(edm::Service<TFileService>& fs, string cutName ){
-      h_mBB      = fs->make<TH1F>( ("mBB_"+cutName).c_str()  , "m_{BB}", 100,  0., 1000. );
-      h_pTBB     = fs->make<TH1F>( ("pTBB_"+cutName).c_str()  , "pT_{BB}", 100,  0., 1000. );
+    eventHists(edm::Service<TFileService>& fs, string cutName, bool isBBMC ){
+      if(isBBMC){
+	h_mBB      = fs->make<TH1F>( ("mBB_"+cutName).c_str()  , "m_{BB}", 100,  0., 1000. );
+	h_pTBB     = fs->make<TH1F>( ("pTBB_"+cutName).c_str()  , "pT_{BB}", 100,  0., 1000. );
+      }
       h_nSelJets = fs->make<TH1F>( ("nSelJet_"+cutName).c_str()  , "Selected Jet Multiplicity",  16,  -0.5, 15.5 );
       h_hT       = fs->make<TH1F>( ("hT_"+cutName).c_str()  , "hT",  200,  0, 1000 );
       h_hT30     = fs->make<TH1F>( ("hT30_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 1000 );
     }
 
     void Fill(double mBB, double pTBB, unsigned int nSelJets, double hT, double hT30 ){
-      h_mBB      ->Fill(mBB);
-      h_pTBB     ->Fill(pTBB);
+      if(h_mBB)  h_mBB      ->Fill(mBB);
+      if(h_pTBB) h_pTBB     ->Fill(pTBB);
       h_nSelJets ->Fill(nSelJets);
       h_hT       ->Fill(hT);
       h_hT30     ->Fill(hT30);
@@ -307,9 +321,6 @@ private:
   //  Event Hists
   //
   vector<eventHists> hAll;
-  vector<eventHists> hPassNJet;
-  vector<eventHists> hPassPreSelMed;
-  vector<eventHists> hPassPreSel;
 
   //
   //  Jet Hists
@@ -320,7 +331,7 @@ private:
 
 public:
   explicit TriggerStudy(const edm::ParameterSet& iPara);
-  ~TriggerStudy(){}
+  ~TriggerStudy(){ cout << "Total Events " << NEvents_all << " pass HLT Preselection " << NEvents_passHLTPreSelection << " pass Offline Preselection " << NEvents_passOfflinePreSelection << endl;}
   void beginJob() override;
   void analyze(const edm::Event& iEvent,const edm::EventSetup& iSetup)override;
 
@@ -332,7 +343,9 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
   filtersToPass_(iPara.getParameter<vector<edm::ParameterSet> >("filtersToPass")), 
   pathsToPass_(iPara.getParameter<vector<string> >("pathsToPass")),
   hltPreSelection_(iPara.getParameter<vector<string> >("hltPreSelection")),
+  offlinePreSelection_(iPara.getParameter<edm::ParameterSet>("offlinePreSelection")),
   isMC_(iPara.getParameter<bool>("isMC")),
+  isBBMC_(iPara.getParameter<bool>("isBBMC")),
   jetTurnOns_(iPara.getParameter<vector<edm::ParameterSet> >("jetTurnOns")), 
   trigResultsToken_(consumes<edm::TriggerResults>(trigResultsTag_)),
   trigObjsToken_(consumes<vector<pat::TriggerObjectStandAlone> >(trigObjsTag_)),
@@ -340,24 +353,28 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
   truthJetsToken_(consumes<edm::View<reco::GenJet> >(iPara.getParameter<edm::InputTag>("truthJets"))),
   truthPartsToken_(consumes<edm::View<reco::GenParticle> >(iPara.getParameter<edm::InputTag>("truthParts")))
 {
+  if(offlinePreSelection_.exists("minNSelJet"))
+     minNSelJet_      = offlinePreSelection_.getParameter<unsigned int>("minNSelJet");
+
+  if(offlinePreSelection_.exists("minNTagMedJet"))
+    minNTagMedJet_   = offlinePreSelection_.getParameter<unsigned int>("minNTagMedJet");
+
+  if(offlinePreSelection_.exists("minNTagTightJet"))
+    minNTagTightJet_ = offlinePreSelection_.getParameter<unsigned int>("minNTagTightJet");
   
+  cout << " Offline Selection: minNSelJet: " << minNSelJet_ << "  minNTagMedJet: " << minNTagMedJet_ << " minNTagTightJet: " << minNTagTightJet_ << endl;
+
 }
 
 void TriggerStudy::beginJob()
 {
 
-  hAll           .push_back(eventHists(fs,"all"));
-  hPassNJet      .push_back(eventHists(fs,"passNJet_all"));
-  hPassPreSelMed .push_back(eventHists(fs,"passPreSelMed_all"));
-  hPassPreSel    .push_back(eventHists(fs,"passPreSel_all"));
+  hAll           .push_back(eventHists(fs,"all", isBBMC_));
 
 
   for(edm::ParameterSet filterInfo : filtersToPass_){
     string name = filterInfo.getParameter<string>("histName");
-    hAll          .push_back(eventHists(fs,name));
-    hPassNJet     .push_back(eventHists(fs,"passNJet_"+name));
-    hPassPreSelMed.push_back(eventHists(fs,"passPreSelMed_"+name));
-    hPassPreSel   .push_back(eventHists(fs,"passPreSel_"+name));
+    hAll          .push_back(eventHists(fs,name,isBBMC_));
   }
 
   TFileDirectory jetDir = fs->mkdir( "jetHists" );
@@ -374,6 +391,10 @@ void TriggerStudy::beginJob()
 
 void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetup)
 { 
+  ++NEvents_all;
+  //if(iEvent.isRealData()) isBBMC_ = false;
+      
+  LogDebug ("TrigerStudy") << "  Run/Event/Lumi: " << iEvent.id().run() << " / " << iEvent.id().event() << " / " << iEvent.id().luminosityBlock();
 
   auto trigResultsHandle = getHandle(iEvent,trigResultsToken_) ;
   auto trigObjsHandle = getHandle(iEvent,trigObjsToken_); 
@@ -396,7 +417,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
       
     }
   }
-
+  ++NEvents_passHLTPreSelection;
   
 
   float mBB = -1;
@@ -405,7 +426,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   //
   //  Get Truth
   //
-  if(isMC_){
+  if(isBBMC_){
     edm::Handle<edm::View<reco::GenJet> > truthJetsHandle = getHandle(iEvent,truthJetsToken_);
     edm::Handle<edm::View<reco::GenParticle> > truthPartsHandle = getHandle(iEvent,truthPartsToken_);
 
@@ -430,7 +451,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
       //	 << " isLastCopy " << tPart.isLastCopy()
       //	 << endl;
     }
-    
+
     if(bosons.size() != 2){
       cout << "ERROR not 2 bosons ..." << bosons.size() << " ... skipping " << endl;
       return;
@@ -452,7 +473,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
 
   //
-  //  Get reco
+  //  Get offline info
   //  
   edm::LogInfo ("TrigerStudy") << "Printing jets " << endl;
 
@@ -485,17 +506,28 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     ++nTaggedJets;
   }
 
-  bool pass_nJets = nSelectedJets > 3;
-  bool pass_nBJetsMed = nTaggedJetsMed > 3;
-  bool pass_nBJets = nTaggedJets > 3;
-  bool pass_preSelectionMed = pass_nJets and pass_nBJetsMed;
-  bool pass_preSelection = pass_nJets and pass_nBJets;
-  //cout << " nSelectedJets / nTaggedJets " << nSelectedJets << " / " << nTaggedJets << endl;
+  //
+  //  Pffline Cuts
+  //
+  bool passOfflinePreSelection = true;
+  if(nSelectedJets < minNSelJet_) {
+    LogDebug ("TrigerStudy") << "Failed minNSelJet " << endl;
+    return;
+  }
+
+  if(nTaggedJetsMed < minNTagMedJet_) {
+    LogDebug ("TrigerStudy") << "Failed minNTagMedJet " << endl;
+    return;
+  }
+
+  if(nTaggedJets < minNTagTightJet_) {
+    LogDebug ("TrigerStudy") << "Failed minNTagTightJet " << endl;
+    return;
+  }
+  ++NEvents_passOfflinePreSelection;
+
 
   hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
-  if(pass_nJets)           hPassNJet     .at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
-  if(pass_preSelectionMed) hPassPreSelMed.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
-  if(pass_preSelection)    hPassPreSel   .at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
     
 
   //now we will look at the filters passed
@@ -547,10 +579,6 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   //  Print Filters fill hists
   //
   bool printFilters = false;
-  if(printFilters){
-    cout << " preselection Passed: ";
-    cout << pass_nJets << " " << pass_nBJets << " " << pass_preSelection << " ... ";
-  }
 
   if(printFilters) cout << " filters Passed: ";
 
@@ -560,10 +588,6 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     if(!thisFilter) break;
 
     hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
-    if(pass_nJets)           hPassNJet     .at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
-    if(pass_preSelectionMed) hPassPreSelMed.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
-    if(pass_preSelection)    hPassPreSel   .at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
- 
     ++filterNum;
   }
 
@@ -586,6 +610,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   //
   // Now jet turn ons
   //
+  //if()
 
   //
   //  Loop on Jets
@@ -602,12 +627,15 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     // 
     // Loop on filter reqs
     //
-    unsigned int turnOnNum = 0; // 0 is All
+    unsigned int turnOnNum = -1; 
     for(edm::ParameterSet jetTurnOnInfo : jetTurnOns_){
-      string denName  = jetTurnOnInfo.getParameter<string>("denominatorReq");
+      ++turnOnNum;
 
-      bool passDen = true;
-      if(denName != ""){
+      //
+      //  Require event filter passed (if requested)
+      //
+      if(jetTurnOnInfo.exists("denFilter")){
+	string denName  = jetTurnOnInfo.getParameter<string>("denFilter");
 
 	vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), denName);
 	if(itr == filterNames.end()){
@@ -617,20 +645,49 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
 	unsigned int denIndex = std::distance(filterNames.begin(), itr);
 	for(unsigned int iFilt = 0; iFilt < (denIndex+1); ++iFilt){
-	  if(!filterPassed.at(iFilt)) passDen = false;
+	  if(!filterPassed.at(iFilt)){
+	    edm::LogInfo("TrigerStudy") << "Failing Den requriment at index " << iFilt << endl;
+	    continue;
+	  }
 	}
-	
       }
 
-      if(passDen){
-	hJets_den.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
+      // 
+      // Fill the denominator
+      // 
+      hJets_den.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
 
-	string numName  = jetTurnOnInfo.getParameter<string>("filterName");
-	if(checkFilter(eta,phi,trigObjsUnpacked,numName) )
-	  hJets_num.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
+      // 
+      // Now the numerator cuts
+      // 
+      bool passNumerator = false;
+
+      if(jetTurnOnInfo.exists("numFilterMatch")){
+	string numName  = jetTurnOnInfo.getParameter<string>("numFilterMatch");
+	
+	if(checkFilter(eta,phi,trigObjsUnpacked,numName)){
+	  passNumerator = true;
+	}
+      }
+
+      if(jetTurnOnInfo.exists("numPtCut")){	
+	string filterMatch  = jetTurnOnInfo.getParameter<string>("numPtName");
+	double filterPt     = jetTurnOnInfo.getParameter<double>("numPtCut");
+	vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, filterMatch);
+
+	if(onlineMatch.size() > 1)
+	  cout << " size of filterMatches " << onlineMatch.size() << endl;
+
+	for(auto& trigObj : onlineMatch){
+	  if(trigObj->pt() >= filterPt) passNumerator = true;
+	}
+
       }
       
-      ++turnOnNum;
+      if(passNumerator){
+	hJets_num.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
+      }
+
     }// Turn Ons
 
   }// jets
