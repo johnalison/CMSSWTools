@@ -17,16 +17,6 @@ options.parseArguments()
 # set up process
 process = cms.Process("TriggerStudy")
 
-# initialize MessageLogger and output report
-process.load("FWCore.MessageLogger.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkSummary = cms.untracked.PSet(
-    reportEvery = cms.untracked.int32(500),
-    limit = cms.untracked.int32(10000000)
-)
-process.MessageLogger.cerr.FwkReport = cms.untracked.PSet(
-    reportEvery = cms.untracked.int32(500),
-    limit = cms.untracked.int32(10000000)
-)
 
 # MC  dasgoclient -query="file dataset=/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1/MINIAODSIM"
 #process.source = cms.Source("PoolSource",
@@ -83,8 +73,10 @@ process.maxEvents = cms.untracked.PSet(
 
 process.triggerStudy = cms.EDAnalyzer("TriggerStudy",           
                                       hltPreSelection = cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v"),
+                                      offlinePreSelection = cms.PSet(),
                                       isBBMC = cms.bool(False),
-                                      isMC = cms.bool(False),
+                                      isMC = cms.bool(options.isMC),
+                                      testL1 = cms.bool(False),
                                       trigObjs = cms.InputTag("slimmedPatTrigger"),
                                       trigResults = cms.InputTag("TriggerResults","","HLT"),
                                       filtersToPass = cms.VPSet(  # Not really Needed bc we have the input trigger
@@ -104,10 +96,6 @@ process.triggerStudy = cms.EDAnalyzer("TriggerStudy",
                                                    mult = cms.uint32(2),
                                                    pt = cms.double(30)),
 
-                                          
-                                          #hltCaloJetFilterTwoC30
-
-
                                       ), 
 
                                       jetTurnOns = cms.VPSet(
@@ -120,6 +108,13 @@ process.triggerStudy = cms.EDAnalyzer("TriggerStudy",
                                                    numPtName = cms.string("hltCaloJetFilterTwoC30"),
                                                ),
 
+                                          cms.PSet(histName = cms.string("Calo30Test2"),
+                                                   numPtCut = cms.double(30.),
+                                                   numPtName = cms.string("hltCaloJetFilterTwoC30"),
+                                                   probeFilterMatch = cms.string("hltCaloJetFilterTwoC30"),
+                                               ),
+
+                                          
                                           cms.PSet(histName = cms.string("PF30"),
                                                    numPtCut = cms.double(30.),
                                                    numPtName = cms.string("hltPFJetFilterTwoC30"),
@@ -144,24 +139,42 @@ process.triggerStudy = cms.EDAnalyzer("TriggerStudy",
                                                    numPtCut = cms.double(40.),
                                                    numPtName = cms.string("hltPFJetFilterTwoC30"),
                                                ),
-
-
                                       ),
                                       pathsToPass = cms.vstring(),
                                       jets = cms.InputTag("slimmedJets"),
+                                      L1Jets = cms.InputTag("caloStage2Digis","Jet"),
                                       truthJets = cms.InputTag("slimmedGenJets"),
-                                      truthParts = cms.InputTag("prunedGenParticles")
-)
+                                      truthParts = cms.InputTag("prunedGenParticles"),
+                                      AlgInputTag = cms.InputTag("gtStage2Digis"),
+                                      ExtInputTag = cms.InputTag("gtStage2Digis"),
+                                  )
 
 
-process.p = cms.Path(process.triggerStudy)# + process.triggerStudyHT180 + process.triggerStudyHT250) # + process.triggerStudyPFJet80 + process.triggerStudyPFJet140)
+process.triggerStudyPassNJet = process.triggerStudy.clone()
+process.triggerStudyPassNJet.offlinePreSelection = cms.PSet(minNSelJet = cms.uint32(2))
+
+
+process.triggerStudyPassPreSelMed = process.triggerStudy.clone()
+process.triggerStudyPassPreSelMed.offlinePreSelection = cms.PSet(minNSelJet = cms.uint32(2),
+                                                                 minNTagMedJet = cms.uint32(2))
+
+
+process.p = cms.Path(process.triggerStudy + process.triggerStudyPassNJet + process.triggerStudyPassPreSelMed)
 
 
 # initialize MessageLogger and output report
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
-process.MessageLogger.cerr.threshold = 'ERROR'
+process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.categories.append('TriggerStudy')
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
-    limit = cms.untracked.int32(-1)
+    limit = cms.untracked.int32(0)
+)
+process.MessageLogger.cerr.FwkSummary = cms.untracked.PSet(
+    reportEvery = cms.untracked.int32(10000),
+    limit = cms.untracked.int32(100000)
+)
+process.MessageLogger.cerr.FwkReport = cms.untracked.PSet(
+    reportEvery = cms.untracked.int32(10000),
+    limit = cms.untracked.int32(10000)
 )
 process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
