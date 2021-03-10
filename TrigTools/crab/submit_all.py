@@ -61,12 +61,13 @@ def main():
       config.JobType.inputFiles = inFiles 
     config.JobType.pyCfgParams = args.pyCfgParams
     config.JobType.sendExternalFolder = True
-    config.JobType.maxJobRuntimeMin = args.maxJobRuntimeMin
+    #print "MaxJob RunTimeMin is ", args.maxJobRuntimeMin
+    #config.JobType.maxJobRuntimeMin = args.maxJobRuntimeMin
     config.JobType.maxMemoryMB = args.maxMemoryMB
     
     config.Data.inputDataset = None
     config.Data.splitting = ''
-    config.Data.unitsPerJob = 1
+    #config.Data.unitsPerJob = 1
     config.Data.ignoreLocality = False
     config.Data.publication = False
     config.Data.publishDBS = 'phys03'
@@ -110,8 +111,9 @@ def main():
         elif datatier == 'AODSIM': 
           config.Data.splitting = 'FileBased'
         elif datatier == 'MINIAOD': 
-          config.Data.splitting = 'LumiBased'
-          config.Data.unitsPerJob = 40
+          #config.Data.splitting = 'LumiBased'
+          #config.Data.unitsPerJob = 40
+          config.Data.splitting = 'Automatic'
           config.Data.lumiMask = args.lumiMask
         elif datatier == 'AOD': 
           config.Data.splitting = 'LumiBased'

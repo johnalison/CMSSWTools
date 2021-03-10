@@ -16,6 +16,7 @@
 <use   name="FWCore/Utilities"/> 
 <use   name="Geometry/CaloGeometry"/>
 <use   name="DataFormats/CaloTowers"/>
+<use   name="TriggerEmulator/nTupleAnalysis"/>
 <export>
   <lib   name="1"/>
 </export>

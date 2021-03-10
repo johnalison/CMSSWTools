@@ -22,12 +22,11 @@
 #include "DataFormats/L1Trigger/interface/Jet.h"
 
 #include "DataFormats/L1TGlobal/interface/GlobalAlgBlk.h"
-//#include "DataFormats/L1TGlobal/interface/GlobalExtBlk.h"
 
 #include "CondFormats/L1TObjects/interface/L1TUtmTriggerMenu.h"
 #include "CondFormats/DataRecord/interface/L1TUtmTriggerMenuRcd.h"
+#include "TriggerEmulator/nTupleAnalysis/interface/TrigEmulatorTool.h"
 
-//#include "L1Trigger/L1TGlobal/interface/L1TGlobalUtil.h"
 
 #include <vector>
 #include <string>
@@ -251,6 +250,7 @@ private:
   bool isMC_;
   bool isBBMC_;
   bool testL1_;
+  bool doEmulation_ = false;
   vector<edm::ParameterSet> jetTurnOns_;
 
   //trigger results stores whether a given path passed or failed
@@ -294,12 +294,12 @@ private:
       h_hT30     = fs->make<TH1F>( ("hT30_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 1000 );
     }
 
-    void Fill(double mBB, double pTBB, unsigned int nSelJets, double hT, double hT30 ){
-      if(h_mBB)  h_mBB      ->Fill(mBB);
-      if(h_pTBB) h_pTBB     ->Fill(pTBB);
-      h_nSelJets ->Fill(nSelJets);
-      h_hT       ->Fill(hT);
-      h_hT30     ->Fill(hT30);
+    void Fill(double mBB, double pTBB, unsigned int nSelJets, double hT, double hT30, float weight = 1.0 ){
+      if(h_mBB)  h_mBB      ->Fill(mBB, weight);
+      if(h_pTBB) h_pTBB     ->Fill(pTBB, weight);
+      h_nSelJets ->Fill(nSelJets, weight);
+      h_hT       ->Fill(hT, weight);
+      h_hT30     ->Fill(hT30, weight);
     }
 
   };
@@ -322,12 +322,12 @@ private:
       h_deepFlavour = jetDir.make<TH1F>( ("deepFlavour_"+cutName).c_str()  , "deepFlavour",  100,  -0.1, 1.1 );
     }
 
-    void Fill(double pt, double eta, double phi, double deepFlavour ){
-      h_pt          ->Fill(pt);
-      h_pt_s        ->Fill(pt);
-      h_phi         ->Fill(phi);
-      h_eta         ->Fill(eta);
-      h_deepFlavour ->Fill(deepFlavour);
+    void Fill(double pt, double eta, double phi, double deepFlavour, float weight = 1.0 ){
+      h_pt          ->Fill(pt, weight);
+      h_pt_s        ->Fill(pt, weight);
+      h_phi         ->Fill(phi, weight);
+      h_eta         ->Fill(eta, weight);
+      h_deepFlavour ->Fill(deepFlavour, weight);
     }
 
   };
@@ -346,6 +346,12 @@ private:
   vector<string> L1Names_;
   vector<unsigned int> L1Indices_;  
   map<std::string, unsigned int> L1_NamesToPos;
+
+
+  //
+  //  Trigger Emulation
+  //
+  TriggerEmulator::TrigEmulatorTool* trigEmulator = nullptr;
 
 public:
   explicit TriggerStudy(const edm::ParameterSet& iPara);
@@ -367,6 +373,7 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
   isMC_(iPara.getParameter<bool>("isMC")),
   isBBMC_(iPara.getParameter<bool>("isBBMC")),
   testL1_(iPara.getParameter<bool>("testL1")),
+  doEmulation_(iPara.getParameter<bool>("doEmulation")),
   jetTurnOns_(iPara.getParameter<vector<edm::ParameterSet> >("jetTurnOns")), 
   trigResultsToken_(consumes<edm::TriggerResults>(trigResultsTag_)),
   trigObjsToken_(consumes<vector<pat::TriggerObjectStandAlone> >(trigObjsTag_)),
@@ -390,13 +397,26 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
   edm::LogInfo("TriggerStudy") << " Offline Selection: minNSelJet: " << minNSelJet_ << "  minNTagMedJet: " << minNTagMedJet_ << " minNTagTightJet: " << minNTagTightJet_;
 
 
+  if(doEmulation_){
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100);
+
+    trigEmulator->AddTrig("EMU_L1ORAll",    "L1ORAll");
+    trigEmulator->AddTrig("EMU_CaloHt320",  "CaloHt320");
+    trigEmulator->AddTrig("EMU_4PF30",      {"PF30"},{4});
+    trigEmulator->AddTrig("EMU_1PF75",      {"PF75"},{1});
+    trigEmulator->AddTrig("EMU_2PF60",      {"PF60"},{2});
+    trigEmulator->AddTrig("EMU_3PF45",      {"PF45"},{3});
+    trigEmulator->AddTrig("EMU_4PF40",      {"PF40"},{4});
+    trigEmulator->AddTrig("EMU_PFHt330",    "PFHt330");
+    trigEmulator->AddTrig("EMU_3PFBtags",   {"PFDeepCSV"},{3});
+  }
+
 }
 
 void TriggerStudy::beginJob()
 {
 
   hAll           .push_back(eventHists(fs,"all", isBBMC_));
-
 
   for(edm::ParameterSet filterInfo : filtersToPass_){
     string name = filterInfo.getParameter<string>("histName");
@@ -552,6 +572,9 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   unsigned int nSelectedJets = 0;
   unsigned int nTaggedJetsMed = 0;
   unsigned int nTaggedJets = 0;
+
+  vector<float> jet_pts;
+  vector<float> tagJet_pts;
   
   float hT = 0;
   float hT30 = 0;
@@ -566,6 +589,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     
     if(pt<30) continue;
     hT30+=pt;
+    jet_pts.push_back(pt);
 
     if(pt < 40) continue;
     ++nSelectedJets;
@@ -613,91 +637,281 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   }
 
 
-
-  //
-  //  Checking the filters
-  //
-  vector<string> filterNames;
-  vector<bool> filterPassed;
-  for(edm::ParameterSet filterInfo : filtersToPass_){
-
-    bool passFilter = true;
-    string name;
+  if(doEmulation_){
 
     //
-    //  L1 Selection
+    //  Trigger Emulation
     //
-    if(filterInfo.exists("L1Names")){
-      //cout << "-----" << endl;
-      bool passL1OR = false;
-      vector<string> L1Names = filterInfo.getParameter<vector<string> >("L1Names");      
-      name = filterInfo.getParameter<string>("histName");
-      for(const string& L1N : L1Names){
 
-	unsigned int L1Index = L1Indices_.at(L1_NamesToPos[L1N]);
-	//cout << "Checking name " << L1N << " at position " << L1_NamesToPos[L1N] << " at index  " << L1Index << " passed ... " << bool(L1word[L1Index]) << endl;
-	if(L1word[L1Index]){
-	  passL1OR = true;
-	}
-      }
-      
-      if(!passL1OR) passFilter = false;
+    trigEmulator->SetWeights  (jet_pts, tagJet_pts, hT30);
+
+    unsigned int filterNum = 1; // 0 is All
+    float triggerWeight = 1.0;
+    for(edm::ParameterSet filterInfo : filtersToPass_){
+      string name = filterInfo.getParameter<string>("histName");
+
+      triggerWeight *= trigEmulator->GetWeight("EMU_"+name);      
+
+      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, triggerWeight);
+
+      ++filterNum;
     }
 
+
+    //hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30, 1);
+
+    //cout << trigEmulator->GetWeight("EMU_4PF30") << endl;
+
+
+  } else{
+    
     
     //
-    //  HLT Selection
+    //  Checking the filters
     //
-    if(filterInfo.exists("filterName")){
-      name = filterInfo.getParameter<string>("filterName");
+    vector<string> filterNames;
+    vector<bool> filterPassed;
+    for(edm::ParameterSet filterInfo : filtersToPass_){
 
-      unsigned int mult = filterInfo.getParameter<unsigned int>("mult");
-      double pt = filterInfo.getParameter<double>("pt");
-      vector<const pat::TriggerObjectStandAlone*> releventTrigObs = getAllTrigObjs(trigObjsUnpacked, name);
-
-
-      if(mult > 0 && releventTrigObs.size() < mult){
-	//if(releventTrigObs.size() > 0) cout << name << " Fails with size " << releventTrigObs.size() << endl;
-	passFilter = false;
+      bool passFilter = true;
+      string name;
+    
+      //
+      //  L1 Selection
+      //
+      if(filterInfo.exists("L1Names")){
+	//cout << "-----" << endl;
+	bool passL1OR = false;
+	vector<string> L1Names = filterInfo.getParameter<vector<string> >("L1Names");      
+	name = filterInfo.getParameter<string>("histName");
+	for(const string& L1N : L1Names){
+    
+	  unsigned int L1Index = L1Indices_.at(L1_NamesToPos[L1N]);
+	  //cout << "Checking name " << L1N << " at position " << L1_NamesToPos[L1N] << " at index  " << L1Index << " passed ... " << bool(L1word[L1Index]) << endl;
+	  if(L1word[L1Index]){
+	    passL1OR = true;
+	  }
+	}
+          
+	if(!passL1OR) passFilter = false;
       }
+    
+        
+      //
+      //  HLT Selection
+      //
+      if(filterInfo.exists("filterName")){
+	name = filterInfo.getParameter<string>("filterName");
+    
+	unsigned int mult = filterInfo.getParameter<unsigned int>("mult");
+	double pt = filterInfo.getParameter<double>("pt");
+	vector<const pat::TriggerObjectStandAlone*> releventTrigObs = getAllTrigObjs(trigObjsUnpacked, name);
+    
+    
+	if(mult > 0 && releventTrigObs.size() < mult){
+	  //if(releventTrigObs.size() > 0) cout << name << " Fails with size " << releventTrigObs.size() << endl;
+	  passFilter = false;
+	}
+    
+	if(pt   > 0){
+	  bool passPt = false;
+	  for(auto& trigObj : releventTrigObs){
+	    if(trigObj->pt() > pt) passPt = true;
+	  }
+          
+	  if(!passPt) passFilter = false;
+	}
+      } // HLT Selection
+    
+    
+    
+        //filtersPassed.push_back(foundFilter(filter,trigObjsUnpacked));
+      filterNames .push_back(name);
+      filterPassed.push_back(passFilter);
+    }
+    
+    //
+    //  Print Filters fill hists
+    //
+    bool printFilters = false;
+    
+    if(printFilters) cout << " filters Passed: ";
+    
+    unsigned int filterNum = 1; // 0 is All
+    for(bool thisFilter : filterPassed){
+      if(printFilters) cout << thisFilter << " ";
+      if(!thisFilter) break;
+    
+      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
+      ++filterNum;
+    }
 
-      if(pt   > 0){
-	bool passPt = false;
-	for(auto& trigObj : releventTrigObs){
-	  if(trigObj->pt() > pt) passPt = true;
+
+    //
+    // Now jet turn ons
+    //
+
+    //
+    //  Loop on Jets
+    //
+    for(auto& jet : *jetsHandle){
+      double eta = jet.eta();
+      double pt  = jet.pt();    
+      double phi = jet.phi();    
+      double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
+
+      if(fabs(eta) > 2.5) continue;
+
+
+      // 
+      // Loop on filter reqs
+      //
+      unsigned int turnOnNum = -1; 
+      for(edm::ParameterSet jetTurnOnInfo : jetTurnOns_){
+	++turnOnNum;
+
+	//
+	//  Require event filter passed (if requested)
+	//
+	bool passDenominator = true;
+	if(jetTurnOnInfo.exists("denFilter")){
+	  string denName  = jetTurnOnInfo.getParameter<string>("denFilter");
+
+	  vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), denName);
+	  if(itr == filterNames.end()){
+	    cout << "ERROR " << denName << " not found " << endl;
+	    continue;
+	  }
+
+	  unsigned int denIndex = std::distance(filterNames.begin(), itr);
+	  for(unsigned int iFilt = 0; iFilt < (denIndex+1); ++iFilt){
+	    if(!filterPassed.at(iFilt)){
+	      passDenominator = false;
+	    }
+	  }
 	}
       
-	if(!passPt) passFilter = false;
+	//
+	//  Require probe
+	// 
+	if(jetTurnOnInfo.exists("probeFilterMatch")){
+	  string probeName  = jetTurnOnInfo.getParameter<string>("probeFilterMatch");	
+	  bool passProbe = false;
+
+	  //cout << " this jet is pt / eta / phi " << pt << " / " << eta << " / " << phi << endl;
+
+	  // Loop on jets{
+	  for(auto& jetProbe : *jetsHandle){
+	    double etaProbe = jetProbe.eta();
+	    double phiProbe = jetProbe.phi();    
+
+	    //cout << " \t probe cand is pt / eta / phi " << jetProbe.pt() << " / " << etaProbe << " / " << phiProbe << endl;
+	  	  
+	    const float dR2 = reco::deltaR2(eta,phi,etaProbe,phiProbe);
+	    static const float dR2min = 0.4*0.4;
+
+	    if(dR2 < dR2min) 
+	      continue;
+
+	    //cout << " \t pass Probe " << endl;
+	  
+	    // printAllFilters(etaProbe, phiProbe, trigObjsUnpacked);
+
+	    if(!checkFilter(etaProbe,phiProbe,trigObjsUnpacked,probeName))
+	      continue;
+
+	    passProbe = true;
+	  }
+	
+	  if(!passProbe){
+	    cout << "Fail probe"<< endl;
+	    passDenominator = false;
+	  }
+
+
+	}// probeFilterMatch
+
+
+	//
+	//  Require tag
+	// 
+	//if(jetTurnOnInfo.exists("probeFilterMatch")){
+	//}
+
+
+	if(!passDenominator){
+	  continue;
+	}
+
+	// 
+	// Fill the denominator
+	// 
+	hJets_den.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
+
+	// 
+	// Now the numerator cuts
+	// 
+	bool passNumerator = false;
+	if(jetTurnOnInfo.exists("numFilterMatch")){
+	  string numName  = jetTurnOnInfo.getParameter<string>("numFilterMatch");
+	
+	  if(checkFilter(eta,phi,trigObjsUnpacked,numName)){
+	    passNumerator = true;
+	  }
+	}
+
+	if(jetTurnOnInfo.exists("numPtCut")){	
+	  string filterMatch  = jetTurnOnInfo.getParameter<string>("numPtName");
+	  double filterPt     = jetTurnOnInfo.getParameter<double>("numPtCut");
+	  vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, filterMatch);
+
+	  if(onlineMatch.size() > 1)
+	    cout << " size of filterMatches " << onlineMatch.size() << endl;
+
+	  for(auto& trigObj : onlineMatch){
+	    if(trigObj->pt() >= filterPt) passNumerator = true;
+	  }
+
+	}
+      
+	if(passNumerator){
+	  hJets_num.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
+	}
+
+      }// Turn Ons
+
+    }// jets
+
+
+    //
+    // Testing L1
+    //
+    if(testL1_){
+      edm::Handle<BXVector<l1t::Jet> > L1JetsHandle = getHandle(iEvent,L1JetsToken_);
+      //BXVector<l1t::Jet>
+      cout << " ====== " << endl;
+      cout << " PassL1 " << filterNames.at(0) << " " << filterPassed.at(0) << endl;
+  
+      for (int ibx = L1JetsHandle->getFirstBX(); ibx <= L1JetsHandle->getLastBX(); ++ibx) {
+	for (auto itr = L1JetsHandle->begin(ibx); itr != L1JetsHandle->end(ibx); ++itr) {
+  
+	  cout << "Jet : "
+	       << " BX=" << ibx << " ipt=" << itr->hwPt() << " ieta=" << itr->hwEta() << " iphi=" << itr->hwPhi() 
+	       << " rawEt " << itr->rawEt() << " seedEt " << itr->seedEt() << " pt " << itr->pt() 
+	       << std::endl;
+	}
       }
-    } // HLT Selection
+    }
 
 
+  }// not doing emulation
 
-    //filtersPassed.push_back(foundFilter(filter,trigObjsUnpacked));
-    filterNames .push_back(name);
-    filterPassed.push_back(passFilter);
-  }
 
-  //
-  //  Print Filters fill hists
-  //
-  bool printFilters = false;
-
-  if(printFilters) cout << " filters Passed: ";
-
-  unsigned int filterNum = 1; // 0 is All
-  for(bool thisFilter : filterPassed){
-    if(printFilters) cout << thisFilter << " ";
-    if(!thisFilter) break;
-
-    hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
-    ++filterNum;
-  }
 
   //
   //  Print  the final decision
   //
-  if(printFilters){
+  if(false){
     for(auto& pathName : pathsToPass_){
       size_t pathIndex = getPathIndex(pathName,trigNames);
       if(pathIndex>=trigNames.size()) cout <<" path "<<pathName<<" not found in menu"<<endl;
@@ -710,152 +924,8 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     }
   }
 
-  //
-  // Now jet turn ons
-  //
-
-  //
-  //  Loop on Jets
-  //
-  for(auto& jet : *jetsHandle){
-    double eta = jet.eta();
-    double pt  = jet.pt();    
-    double phi = jet.phi();    
-    double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
-
-    if(fabs(eta) > 2.5) continue;
-
-
-    // 
-    // Loop on filter reqs
-    //
-    unsigned int turnOnNum = -1; 
-    for(edm::ParameterSet jetTurnOnInfo : jetTurnOns_){
-      ++turnOnNum;
-
-      //
-      //  Require event filter passed (if requested)
-      //
-      bool passDenominator = true;
-      if(jetTurnOnInfo.exists("denFilter")){
-	string denName  = jetTurnOnInfo.getParameter<string>("denFilter");
-
-	vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), denName);
-	if(itr == filterNames.end()){
-	  cout << "ERROR " << denName << " not found " << endl;
-	  continue;
-	}
-
-	unsigned int denIndex = std::distance(filterNames.begin(), itr);
-	for(unsigned int iFilt = 0; iFilt < (denIndex+1); ++iFilt){
-	  if(!filterPassed.at(iFilt)){
-	    passDenominator = false;
-	  }
-	}
-      }
-      
-      //
-      //  Require probe
-      // 
-      if(jetTurnOnInfo.exists("probeFilterMatch")){
-	string probeName  = jetTurnOnInfo.getParameter<string>("probeFilterMatch");	
-	bool passProbe = false;
-
-	//cout << " this jet is pt / eta / phi " << pt << " / " << eta << " / " << phi << endl;
-
-	// Loop on jets{
-	for(auto& jetProbe : *jetsHandle){
-	  double etaProbe = jetProbe.eta();
-	  double phiProbe = jetProbe.phi();    
-
-	  //cout << " \t probe cand is pt / eta / phi " << jetProbe.pt() << " / " << etaProbe << " / " << phiProbe << endl;
-	  	  
-	  const float dR2 = reco::deltaR2(eta,phi,etaProbe,phiProbe);
-	  static const float dR2min = 0.4*0.4;
-
-	  if(dR2 < dR2min) 
-	    continue;
-
-	  //cout << " \t pass Probe " << endl;
-	  
-	  // printAllFilters(etaProbe, phiProbe, trigObjsUnpacked);
-
-	  if(!checkFilter(etaProbe,phiProbe,trigObjsUnpacked,probeName))
-	    continue;
-
-	  passProbe = true;
-	}
-	
-	if(!passProbe){
-	  cout << "Fail probe"<< endl;
-	  passDenominator = false;
-	}
-
-
-      }
-
-      if(!passDenominator){
-	continue;
-      }
-
-      // 
-      // Fill the denominator
-      // 
-      hJets_den.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
-
-      // 
-      // Now the numerator cuts
-      // 
-      bool passNumerator = false;
-      if(jetTurnOnInfo.exists("numFilterMatch")){
-	string numName  = jetTurnOnInfo.getParameter<string>("numFilterMatch");
-	
-	if(checkFilter(eta,phi,trigObjsUnpacked,numName)){
-	  passNumerator = true;
-	}
-      }
-
-      if(jetTurnOnInfo.exists("numPtCut")){	
-	string filterMatch  = jetTurnOnInfo.getParameter<string>("numPtName");
-	double filterPt     = jetTurnOnInfo.getParameter<double>("numPtCut");
-	vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, filterMatch);
-
-	if(onlineMatch.size() > 1)
-	  cout << " size of filterMatches " << onlineMatch.size() << endl;
-
-	for(auto& trigObj : onlineMatch){
-	  if(trigObj->pt() >= filterPt) passNumerator = true;
-	}
-
-      }
-      
-      if(passNumerator){
-	hJets_num.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
-      }
-
-    }// Turn Ons
-
-  }// jets
-
-  //
-  // Testing L1
-  //
-  if(testL1_){
-    edm::Handle<BXVector<l1t::Jet> > L1JetsHandle = getHandle(iEvent,L1JetsToken_);
-    //BXVector<l1t::Jet>
-    cout << " ====== " << endl;
-    cout << " PassL1 " << filterNames.at(0) << " " << filterPassed.at(0) << endl;
   
-    for (int ibx = L1JetsHandle->getFirstBX(); ibx <= L1JetsHandle->getLastBX(); ++ibx) {
-      for (auto itr = L1JetsHandle->begin(ibx); itr != L1JetsHandle->end(ibx); ++itr) {
   
-  	cout << "Jet : "
-  	     << " BX=" << ibx << " ipt=" << itr->hwPt() << " ieta=" << itr->hwEta() << " iphi=" << itr->hwPhi() 
-  	     << " rawEt " << itr->rawEt() << " seedEt " << itr->seedEt() << " pt " << itr->pt() 
-  	     << std::endl;
-      }
-    }
-  }
 }
 
 
