@@ -83,6 +83,18 @@ jetTurnOnConfig = cms.VPSet(
              denFilter = cms.string("hltCaloQuadJet30HT320"),
          ),
 
+    cms.PSet(numFilterMatch = cms.string("hltBTagCaloDeepCSVp17Double"), 
+             histName = cms.string("CaloDeepCSVMatchBtag"),
+             denFilter = cms.string("hltCaloQuadJet30HT320"),
+             tagFilterMatch = cms.string("Btag"),
+         ),
+
+    cms.PSet(numFilterMatch = cms.string("hltBTagCaloDeepCSVp17Double"), 
+             histName = cms.string("CaloDeepCSVMatchTrueB"),
+             denFilter = cms.string("hltCaloQuadJet30HT320"),
+             tagFilterMatch = cms.string("trueB"),
+         ),
+
     cms.PSet(numFilterMatch = cms.string("hltPFCentralJetLooseIDQuad30"),
              histName = cms.string("PF30"),
              denFilter = cms.string("hltBTagCaloDeepCSVp17Double"), 
@@ -112,6 +124,26 @@ jetTurnOnConfig = cms.VPSet(
              histName = cms.string("PFDeepCSV"),
              denFilter = cms.string("hltPFCentralJetsLooseIDQuad30HT330"),
          ),
+
+    cms.PSet(numFilterMatch = cms.string("hltBTagPFDeepCSV4p5Triple"),
+             histName = cms.string("PFDeepCSVMatchBtag"),
+             denFilter = cms.string("hltPFCentralJetsLooseIDQuad30HT330"),
+             tagFilterMatch = cms.string("Btag"),
+         ),
+
+    cms.PSet(numFilterMatch = cms.string("hltBTagPFDeepCSV4p5Triple"),
+             histName = cms.string("PFDeepCSVMatchTrueB"),
+             denFilter = cms.string("hltPFCentralJetsLooseIDQuad30HT330"),
+             tagFilterMatch = cms.string("trueB"),
+         ),
+
+    cms.PSet(numFilterMatch = cms.string("hltBTagPFDeepCSV4p5Triple"),
+             histName = cms.string("PFDeepCSVMatchTrueBtag"),
+             denFilter = cms.string("hltPFCentralJetsLooseIDQuad30HT330"),
+             tagFilterMatch = cms.string("trueBtag"),
+         ),
+
+
     )
     
 
@@ -356,8 +388,13 @@ triggerConfigEMU = cms.VPSet(
     cms.PSet(histName = cms.string("3PF45")),
     cms.PSet(histName = cms.string("4PF40")),
     cms.PSet(histName = cms.string("PFHt330")),
-    cms.PSet(histName = cms.string("3PFBtags")),
+    #cms.PSet(histName = cms.string("3PFBtags")),
+    cms.PSet(histName = cms.string("HT330_4j_3b")),
 )
+
+
+
+
 triggerEmulation.filtersToPass = triggerConfigEMU
 
 for o in offlinePreSelection:

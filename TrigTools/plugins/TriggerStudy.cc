@@ -32,11 +32,13 @@
 #include <string>
 #include <iostream>
 #include <math.h>
+#include <array>
 
 
 
 using std::cout; using std::endl;
 using std::string; using std::vector;
+typedef std::array<float, 4> JetInfo;
 
 
 //little helper function to get handles easier
@@ -50,6 +52,14 @@ namespace{
     return handle;
   }
 }
+
+namespace{
+
+  void addJetInfo(std::vector<JetInfo>& jetInfo, float pt, float eta, float phi, float deepFlavour ){
+    jetInfo.push_back(JetInfo{ {pt, eta, phi, deepFlavour} });
+  }
+}
+
 
 
 //the functions which actually match the trigger objects and see if it passes
@@ -228,6 +238,7 @@ namespace{
   }
 
 
+  
 
 
 
@@ -274,37 +285,6 @@ private:
   unsigned int NEvents_passOfflinePreSelection = 0;
   
 
-  struct eventHists {
-
-    TH1F* h_mBB      = nullptr;
-    TH1F* h_pTBB     = nullptr;
-    TH1F* h_nSelJets = nullptr;
-    TH1F* h_hT       = nullptr;    
-    TH1F* h_hT30     = nullptr;    
-    TH1F* h_hT_s     = nullptr;    
-    TH1F* h_hT30_s   = nullptr;    
-
-    eventHists(edm::Service<TFileService>& fs, string cutName, bool isBBMC ){
-      if(isBBMC){
-	h_mBB      = fs->make<TH1F>( ("mBB_"+cutName).c_str()  , "m_{BB}", 100,  0., 1000. );
-	h_pTBB     = fs->make<TH1F>( ("pTBB_"+cutName).c_str()  , "pT_{BB}", 100,  0., 1000. );
-      }
-      h_nSelJets = fs->make<TH1F>( ("nSelJet_"+cutName).c_str()  , "Selected Jet Multiplicity",  16,  -0.5, 15.5 );
-      h_hT       = fs->make<TH1F>( ("hT_"+cutName).c_str()  , "hT",  200,  0, 1000 );
-      h_hT30     = fs->make<TH1F>( ("hT30_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 1000 );
-    }
-
-    void Fill(double mBB, double pTBB, unsigned int nSelJets, double hT, double hT30, float weight = 1.0 ){
-      if(h_mBB)  h_mBB      ->Fill(mBB, weight);
-      if(h_pTBB) h_pTBB     ->Fill(pTBB, weight);
-      h_nSelJets ->Fill(nSelJets, weight);
-      h_hT       ->Fill(hT, weight);
-      h_hT30     ->Fill(hT30, weight);
-    }
-
-  };
-
-
   struct jetHists {
 
     TH1F* h_pt;
@@ -315,12 +295,14 @@ private:
 
 
     jetHists(TFileDirectory& jetDir, string cutName ){
-      h_pt          = jetDir.make<TH1F>( ("pt_"+cutName).c_str()  , "p_{T}", 250,  0., 500. );
-      h_pt_s        = jetDir.make<TH1F>( ("pt_s_"+cutName).c_str()  , "p_{T}",200,  0., 100. );
-      h_phi         = jetDir.make<TH1F>( ("phi_"+cutName).c_str()  , "phi",  100,  -3.2, 3.2 );
-      h_eta         = jetDir.make<TH1F>( ("eta_"+cutName).c_str()  , "eta",  100,  -4, 4 );
-      h_deepFlavour = jetDir.make<TH1F>( ("deepFlavour_"+cutName).c_str()  , "deepFlavour",  100,  -0.1, 1.1 );
+      h_pt          = jetDir.make<TH1F>( ("pt"+cutName).c_str()  , "p_{T}", 250,  0., 500. );
+      h_pt_s        = jetDir.make<TH1F>( ("pt_s"+cutName).c_str()  , "p_{T}",200,  0., 100. );
+      h_phi         = jetDir.make<TH1F>( ("phi"+cutName).c_str()  , "phi",  100,  -3.2, 3.2 );
+      h_eta         = jetDir.make<TH1F>( ("eta"+cutName).c_str()  , "eta",  100,  -4, 4 );
+      h_deepFlavour = jetDir.make<TH1F>( ("deepFlavour"+cutName).c_str()  , "deepFlavour",  100,  -0.1, 1.1 );
     }
+
+
 
     void Fill(double pt, double eta, double phi, double deepFlavour, float weight = 1.0 ){
       h_pt          ->Fill(pt, weight);
@@ -330,7 +312,84 @@ private:
       h_deepFlavour ->Fill(deepFlavour, weight);
     }
 
+    void Fill(JetInfo jInfo, float weight = 1.0 ){
+      Fill(jInfo.at(0), jInfo.at(1), jInfo.at(2), jInfo.at(3), weight);
+    }
+
+
   };
+
+
+  struct eventHists {
+
+    TH1F* h_mBB      = nullptr;
+    TH1F* h_pTBB     = nullptr;
+    TH1F* h_nSelJets = nullptr;
+    TH1F* h_hT       = nullptr;    
+    TH1F* h_hT30     = nullptr;    
+    TH1F* h_hT_s     = nullptr;    
+    TH1F* h_hT30_s   = nullptr;    
+
+    jetHists* h_selJets = nullptr;
+    jetHists* h_tagJets = nullptr;
+    jetHists* h_leadJet = nullptr;
+    jetHists* h_sublJet = nullptr;
+    jetHists* h_leadTag = nullptr;
+    jetHists* h_sublTag = nullptr;
+
+
+    eventHists(edm::Service<TFileService>& fs, string cutName, bool isBBMC ){
+      if(isBBMC){
+	h_mBB      = fs->make<TH1F>( ("mBB_"+cutName).c_str()  , "m_{BB}", 100,  0., 1000. );
+	h_pTBB     = fs->make<TH1F>( ("pTBB_"+cutName).c_str()  , "pT_{BB}", 100,  0., 1000. );
+      }
+      h_nSelJets = fs->make<TH1F>( ("nSelJet_"+cutName).c_str()  , "Selected Jet Multiplicity",  16,  -0.5, 15.5 );
+      h_hT       = fs->make<TH1F>( ("hT_"+cutName).c_str()  , "hT",  200,  0, 1000 );
+      h_hT30     = fs->make<TH1F>( ("hT30_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 1000 );
+      
+
+      TFileDirectory selJetsDir = fs->mkdir( "selJets" );
+      TFileDirectory tagJetsDir = fs->mkdir( "tagJets" );
+      TFileDirectory leadJetDir = fs->mkdir( "leadJet" );
+      TFileDirectory sublJetDir = fs->mkdir( "sublJet" );
+      TFileDirectory leadTagDir = fs->mkdir( "leadTag" );
+      TFileDirectory sublTagDir = fs->mkdir( "sublTag" );
+
+
+      h_selJets = new jetHists(selJetsDir,"");
+      h_tagJets = new jetHists(tagJetsDir, "");
+      h_leadJet = new jetHists(leadJetDir,"");
+      h_sublJet = new jetHists(sublJetDir,"");
+      h_leadTag = new jetHists(leadTagDir,"");
+      h_sublTag = new jetHists(sublTagDir,"");
+
+    }
+
+    void Fill(double mBB, double pTBB, unsigned int nSelJets, double hT, double hT30, vector<JetInfo> selJets, vector<JetInfo> tagJets, float weight = 1.0 ){
+      if(h_mBB)  h_mBB      ->Fill(mBB, weight);
+      if(h_pTBB) h_pTBB     ->Fill(pTBB, weight);
+      h_nSelJets ->Fill(nSelJets, weight);
+      h_hT       ->Fill(hT, weight);
+      h_hT30     ->Fill(hT30, weight);
+
+      for(const JetInfo& jInfo: selJets){
+      	h_selJets->Fill(jInfo, weight);
+      }
+
+      for(const JetInfo& jInfo: tagJets){
+      	h_tagJets->Fill(jInfo, weight);
+      }
+
+      if(selJets.size() > 0) h_leadJet->Fill(selJets.at(0));
+      if(selJets.size() > 1) h_sublJet->Fill(selJets.at(1));
+
+      if(tagJets.size() > 0) h_leadTag->Fill(tagJets.at(0));
+      if(tagJets.size() > 1) h_sublTag->Fill(tagJets.at(1));
+
+    }
+
+  };
+
 
   //
   //  Event Hists
@@ -398,17 +457,22 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
 
 
   if(doEmulation_){
+    cout << "Making Emulator" << endl;
     trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100);
+    cout << "Adding Triggers" << endl;
 
-    trigEmulator->AddTrig("EMU_L1ORAll",    "L1ORAll");
-    trigEmulator->AddTrig("EMU_CaloHt320",  "CaloHt320");
-    trigEmulator->AddTrig("EMU_4PF30",      {"PF30"},{4});
-    trigEmulator->AddTrig("EMU_1PF75",      {"PF75"},{1});
-    trigEmulator->AddTrig("EMU_2PF60",      {"PF60"},{2});
-    trigEmulator->AddTrig("EMU_3PF45",      {"PF45"},{3});
-    trigEmulator->AddTrig("EMU_4PF40",      {"PF40"},{4});
-    trigEmulator->AddTrig("EMU_PFHt330",    "PFHt330");
-    trigEmulator->AddTrig("EMU_3PFBtags",   {"PFDeepCSV"},{3});
+    trigEmulator->AddTrig("EMU_L1ORAll",    {"L1ORAll"});
+    trigEmulator->AddTrig("EMU_CaloHt320",  {"L1ORAll","CaloHt320"});
+
+    trigEmulator->AddTrig("EMU_4PF30",      {"L1ORAll","CaloHt320"}, {"PF30"},{4});
+    trigEmulator->AddTrig("EMU_1PF75",      {"L1ORAll","CaloHt320"}, {"PF30","PF75"},{4,1});
+    trigEmulator->AddTrig("EMU_2PF60",      {"L1ORAll","CaloHt320"}, {"PF30","PF75","PF60"},{4,1,2});
+    trigEmulator->AddTrig("EMU_3PF45",      {"L1ORAll","CaloHt320"}, {"PF30","PF75","PF60","PF45"},{4,1,2,3});
+    trigEmulator->AddTrig("EMU_4PF40",      {"L1ORAll","CaloHt320"}, {"PF30","PF75","PF60","PF45","PF40"},{4,1,2,3,4});
+
+    trigEmulator->AddTrig("EMU_PFHt330",       {"L1ORAll","CaloHt320","PFHt330"}, {"PF30","PF75","PF60","PF45","PF40"},{4,1,2,3,4});
+    trigEmulator->AddTrig("EMU_HT330_4j_3b",   {"L1ORAll","CaloHt320","PFHt330"}, {"PF30","PF75","PF60","PF45","PF40"},{4,1,2,3,4},{"PFDeepCSV"},{3});
+    cout << "Done Adding Triggers" << endl;
   }
 
 }
@@ -427,8 +491,8 @@ void TriggerStudy::beginJob()
 
   for(edm::ParameterSet jetTurnOnInfo : jetTurnOns_){
     string name = jetTurnOnInfo.getParameter<string>("histName");
-    hJets_num.push_back(jetHists(jetDir,name));
-    hJets_den.push_back(jetHists(jetDir,name+"_den"));
+    hJets_num.push_back(jetHists(jetDir,"_"+name));
+    hJets_den.push_back(jetHists(jetDir,"_"+name+"_den"));
   }
 
 }
@@ -514,6 +578,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
   float mBB = -1;
   float pTBB = -1;
+  vector<const reco::GenParticle*> bQuarks;
 
   //
   //  Get Truth
@@ -523,7 +588,6 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     edm::Handle<edm::View<reco::GenParticle> > truthPartsHandle = getHandle(iEvent,truthPartsToken_);
 
     vector<const reco::GenParticle*> bosons;
-    vector<const reco::GenParticle*> bQuarks;
     for(const reco::GenParticle& tPart : *truthPartsHandle){
       int pdgId = tPart.pdgId();
     
@@ -576,11 +640,16 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   vector<float> jet_pts;
   vector<float> tagJet_pts;
   
+  vector<JetInfo> sel_JetInfo;
+  vector<JetInfo> tag_JetInfo;
+
+  
   float hT = 0;
   float hT30 = 0;
   for(auto& jet : *jetsHandle){
     double eta = jet.eta();
     double pt = jet.pt();    
+    double phi = jet.phi();    
     double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
 
 
@@ -590,7 +659,13 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     if(pt<30) continue;
     hT30+=pt;
     jet_pts.push_back(pt);
+    addJetInfo(sel_JetInfo, pt, eta, phi, deepFlavour);
 
+    if(deepFlavour >= 0.6) {
+      tagJet_pts.push_back(pt);
+      addJetInfo(tag_JetInfo, pt, eta, phi, deepFlavour);
+    }
+    
     if(pt < 40) continue;
     ++nSelectedJets;
     hT+=pt;
@@ -622,7 +697,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   ++NEvents_passOfflinePreSelection;
 
 
-  hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
+  hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo);
     
 
   //now we will look at the filters passed
@@ -646,13 +721,12 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     trigEmulator->SetWeights  (jet_pts, tagJet_pts, hT30);
 
     unsigned int filterNum = 1; // 0 is All
-    float triggerWeight = 1.0;
     for(edm::ParameterSet filterInfo : filtersToPass_){
       string name = filterInfo.getParameter<string>("histName");
 
-      triggerWeight *= trigEmulator->GetWeight("EMU_"+name);      
+      float triggerWeight = trigEmulator->GetWeight("EMU_"+name);      
 
-      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, triggerWeight);
+      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo, triggerWeight);
 
       ++filterNum;
     }
@@ -742,7 +816,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
       if(printFilters) cout << thisFilter << " ";
       if(!thisFilter) break;
     
-      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30);
+      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo);
       ++filterNum;
     }
 
@@ -792,7 +866,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 	}
       
 	//
-	//  Require probe
+	//  Require probe (Matches on the "away side" dR > 0.4)
 	// 
 	if(jetTurnOnInfo.exists("probeFilterMatch")){
 	  string probeName  = jetTurnOnInfo.getParameter<string>("probeFilterMatch");	
@@ -824,7 +898,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 	  }
 	
 	  if(!passProbe){
-	    cout << "Fail probe"<< endl;
+	    //cout << "Fail probe"<< endl;
 	    passDenominator = false;
 	  }
 
@@ -833,10 +907,76 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
 
 	//
-	//  Require tag
+	//  Require tag (Matches on the "near side" dR < 0.4)
 	// 
-	//if(jetTurnOnInfo.exists("probeFilterMatch")){
-	//}
+	if(jetTurnOnInfo.exists("tagFilterMatch")){
+
+	  bool passTag = false;
+
+	  // Only support near side btagging and truth bcuts 
+	  string tagName  = jetTurnOnInfo.getParameter<string>("tagFilterMatch");	
+	  
+	  bool reqBTag  = (tagName == "Btag"  || tagName == "trueBtag");
+	  bool reqTrueB = (tagName == "trueB" || tagName == "trueBtag");
+	  
+	  bool passBTag  = !reqBTag;
+	  bool passTrueB = !reqTrueB;
+
+	  if(reqBTag){
+
+	    //cout << " this jet is pt / eta / phi " << pt << " / " << eta << " / " << phi << endl;
+    
+	    // Loop on jets{
+	    for(auto& jetTag : *jetsHandle){
+    
+	      double etaTag = jetTag.eta();
+	      double phiTag = jetTag.phi();    
+    
+	      //cout << " \t tag cand is pt / eta / phi " << jetTag.pt() << " / " << etaTag << " / " << phiTag << endl;
+    	  	  
+	      const float dR2 = reco::deltaR2(eta,phi,etaTag,phiTag);
+	      static const float dR2min = 0.4*0.4;
+    
+	      if(dR2 > dR2min) 
+		continue;
+    
+	      //cout << " \t pass Tag " << endl;
+	      double tagDeepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
+	      if(tagDeepFlavour < 0.6) continue;
+    
+	      passBTag = true;
+	      break;
+	    }
+	  }
+
+	  if(reqTrueB){
+	    //cout << "Matching to trueB. " << endl;
+	    //cout << " nBQs " << bQ->size() << endl;
+	    for(const reco::GenParticle* bQ :  bQuarks){
+	      double etaTrueB = bQ->p4().eta();
+	      double phiTrueB = bQ->p4().phi();    
+	      
+	      const float dR2 = reco::deltaR2(eta,phi,etaTrueB,phiTrueB);
+	      static const float dR2min = 0.4*0.4;
+	      
+	      if(dR2 > dR2min) 
+		continue;
+
+	      passTrueB = true;
+	      break;
+	    }
+
+	  }
+	  
+	  passTag = (passBTag & passTrueB);
+
+	  if(!passTag){
+	    //cout << "Fail tag"<< endl;
+	    passDenominator = false;
+	  }
+
+
+	}// tagFilter Match
 
 
 	if(!passDenominator){
