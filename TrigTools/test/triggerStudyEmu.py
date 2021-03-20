@@ -111,7 +111,7 @@ process.triggerStudy = cms.EDAnalyzer("TriggerStudy",
                                           cms.PSet(histName = cms.string("Calo30Test2"),
                                                    numPtCut = cms.double(30.),
                                                    numPtName = cms.string("hltCaloJetFilterTwoC30"),
-                                                   probeFilterMatch = cms.string("hltCaloJetFilterTwoC30"),
+                                                   tagFilterMatch = cms.string("hltCaloJetFilterTwoC30"),
                                                ),
 
                                           

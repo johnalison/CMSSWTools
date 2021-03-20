@@ -76,7 +76,6 @@ namespace{
     return matchedObjs;
   }
 
-  /*
   void printAllFilters(const float eta,const float phi,const vector<pat::TriggerObjectStandAlone>& trigObjs,const float maxDeltaR=0.1)
   {
     const auto matchedObjs = getMatchedObjs(eta,phi,trigObjs,maxDeltaR);
@@ -91,7 +90,7 @@ namespace{
     }
     return;
   }
-  */
+
 
   /*
   bool checkFilters(const float eta,const float phi,const vector<pat::TriggerObjectStandAlone>& trigObjs,const vector<string>& filterNames,const float maxDeltaR=0.1)
@@ -263,6 +262,7 @@ private:
   bool testL1_;
   bool doEmulation_ = false;
   vector<edm::ParameterSet> jetTurnOns_;
+  vector<edm::ParameterSet> triggersToPlot_;
 
   //trigger results stores whether a given path passed or failed
   //a path is series of filters
@@ -356,12 +356,12 @@ private:
       TFileDirectory sublTagDir = fs->mkdir( "sublTag" );
 
 
-      h_selJets = new jetHists(selJetsDir,"");
-      h_tagJets = new jetHists(tagJetsDir, "");
-      h_leadJet = new jetHists(leadJetDir,"");
-      h_sublJet = new jetHists(sublJetDir,"");
-      h_leadTag = new jetHists(leadTagDir,"");
-      h_sublTag = new jetHists(sublTagDir,"");
+      h_selJets = new jetHists(selJetsDir, "_"+cutName);
+      h_tagJets = new jetHists(tagJetsDir, "_"+cutName);
+      h_leadJet = new jetHists(leadJetDir, "_"+cutName);
+      h_sublJet = new jetHists(sublJetDir, "_"+cutName);
+      h_leadTag = new jetHists(leadTagDir, "_"+cutName);
+      h_sublTag = new jetHists(sublTagDir, "_"+cutName);
 
     }
 
@@ -380,11 +380,11 @@ private:
       	h_tagJets->Fill(jInfo, weight);
       }
 
-      if(selJets.size() > 0) h_leadJet->Fill(selJets.at(0));
-      if(selJets.size() > 1) h_sublJet->Fill(selJets.at(1));
+      if(selJets.size() > 0) h_leadJet->Fill(selJets.at(0), weight);
+      if(selJets.size() > 1) h_sublJet->Fill(selJets.at(1), weight);
 
-      if(tagJets.size() > 0) h_leadTag->Fill(tagJets.at(0));
-      if(tagJets.size() > 1) h_sublTag->Fill(tagJets.at(1));
+      if(tagJets.size() > 0) h_leadTag->Fill(tagJets.at(0), weight);
+      if(tagJets.size() > 1) h_sublTag->Fill(tagJets.at(1), weight);
 
     }
 
@@ -395,6 +395,7 @@ private:
   //  Event Hists
   //
   vector<eventHists> hAll;
+  vector<eventHists> hTrigStudy;
 
   //
   //  Jet Hists
@@ -410,6 +411,7 @@ private:
   //
   //  Trigger Emulation
   //
+  TriggerEmulator::TrigEmulatorTool* trigEmulatorDetails = nullptr;
   TriggerEmulator::TrigEmulatorTool* trigEmulator = nullptr;
 
 public:
@@ -434,6 +436,7 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
   testL1_(iPara.getParameter<bool>("testL1")),
   doEmulation_(iPara.getParameter<bool>("doEmulation")),
   jetTurnOns_(iPara.getParameter<vector<edm::ParameterSet> >("jetTurnOns")), 
+  triggersToPlot_(iPara.getParameter<vector<edm::ParameterSet> >("triggersToPlot")), 
   trigResultsToken_(consumes<edm::TriggerResults>(trigResultsTag_)),
   trigObjsToken_(consumes<vector<pat::TriggerObjectStandAlone> >(trigObjsTag_)),
   jetsToken_(consumes<edm::View<pat::Jet> >(iPara.getParameter<edm::InputTag>("jets"))),
@@ -458,22 +461,34 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
 
   if(doEmulation_){
     cout << "Making Emulator" << endl;
-    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100);
+    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100);
     cout << "Adding Triggers" << endl;
 
-    trigEmulator->AddTrig("EMU_L1ORAll",    {"L1ORAll"});
-    trigEmulator->AddTrig("EMU_CaloHt320",  {"L1ORAll","CaloHt320"});
+    trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {"L1ORAll"});
+    trigEmulatorDetails->AddTrig("EMU_CaloHt320",  {"L1ORAll","CaloHt320"});
 
-    trigEmulator->AddTrig("EMU_4PF30",      {"L1ORAll","CaloHt320"}, {"PF30"},{4});
-    trigEmulator->AddTrig("EMU_1PF75",      {"L1ORAll","CaloHt320"}, {"PF30","PF75"},{4,1});
-    trigEmulator->AddTrig("EMU_2PF60",      {"L1ORAll","CaloHt320"}, {"PF30","PF75","PF60"},{4,1,2});
-    trigEmulator->AddTrig("EMU_3PF45",      {"L1ORAll","CaloHt320"}, {"PF30","PF75","PF60","PF45"},{4,1,2,3});
-    trigEmulator->AddTrig("EMU_4PF40",      {"L1ORAll","CaloHt320"}, {"PF30","PF75","PF60","PF45","PF40"},{4,1,2,3,4});
-
-    trigEmulator->AddTrig("EMU_PFHt330",       {"L1ORAll","CaloHt320","PFHt330"}, {"PF30","PF75","PF60","PF45","PF40"},{4,1,2,3,4});
-    trigEmulator->AddTrig("EMU_HT330_4j_3b",   {"L1ORAll","CaloHt320","PFHt330"}, {"PF30","PF75","PF60","PF45","PF40"},{4,1,2,3,4},{"PFDeepCSV"},{3});
+    trigEmulatorDetails->AddTrig("EMU_4PF30",      {"L1ORAll","CaloHt320"}, {"PF30DenMatch"},{4});
+    trigEmulatorDetails->AddTrig("EMU_1PF75",      {"L1ORAll","CaloHt320"}, {"PF30DenMatch","PF75DenMatch"},{4,1});
+    trigEmulatorDetails->AddTrig("EMU_2PF60",      {"L1ORAll","CaloHt320"}, {"PF30DenMatch","PF75DenMatch","PF60DenMatch"},{4,1,2});
+    trigEmulatorDetails->AddTrig("EMU_3PF45",      {"L1ORAll","CaloHt320"}, {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch"},{4,1,2,3});
+    trigEmulatorDetails->AddTrig("EMU_4PF40",      {"L1ORAll","CaloHt320"}, {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4});
+    
+    trigEmulatorDetails->AddTrig("EMU_PFHt330",       {"L1ORAll","CaloHt320","PFHt330"},     {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4});
+    trigEmulatorDetails->AddTrig("EMU_HT330_4j_3b",   {"L1ORAll","CaloHt320","PFHt330"},     {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4},{"PFDeepCSVMatchBtagDenMatch"},{3});
     cout << "Done Adding Triggers" << endl;
+
+    trigEmulatorDetails->AddTrig("EMU_2b116_L1ORAll",   {}, {"L1112TandP"}, {2});
+    trigEmulatorDetails->AddTrig("EMU_2b116_2Calo100",  {}, {"L1112TandP","Calo100DenMatch"}, {2, 2});
+    trigEmulatorDetails->AddTrig("EMU_2b116_2CaloBTags",{}, {"L1112TandP"}, {2},                    {"CaloDeepCSV0p7MatchBtag"},{2});
+    trigEmulatorDetails->AddTrig("EMU_2b116_2PF116",    {}, {"L1112TandP","PF116DenMatch"}, {2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
+    trigEmulatorDetails->AddTrig("EMU_2b116",           {}, {"L1112TandP","PF116DenMatch","PF116DrDenMatch"}, {2, 2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
+
+
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100);
+    trigEmulator->AddTrig("EMU_HT330_4j_3b",   {"L1ORAll","CaloHt320","PFHt330"},     {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4},{"PFDeepCSVMatchBtagDenMatch"},{3});
+    trigEmulator->AddTrig("EMU_2b116",    {},  {"L1112TandP","PF116DenMatch","PF116DrDenMatch"}, {2, 2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
   }
+
 
 }
 
@@ -494,6 +509,13 @@ void TriggerStudy::beginJob()
     hJets_num.push_back(jetHists(jetDir,"_"+name));
     hJets_den.push_back(jetHists(jetDir,"_"+name+"_den"));
   }
+
+
+  for(edm::ParameterSet triggerPath : triggersToPlot_){
+    string name = triggerPath.getParameter<string>("name");
+    hTrigStudy.push_back(eventHists(fs,"passHLT_"+name,isBBMC_));
+  }
+
 
 }
 
@@ -718,15 +740,20 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     //  Trigger Emulation
     //
 
-    trigEmulator->SetWeights  (jet_pts, tagJet_pts, hT30);
+    trigEmulatorDetails->SetWeights  (jet_pts, tagJet_pts, hT30);
+
 
     unsigned int filterNum = 1; // 0 is All
     for(edm::ParameterSet filterInfo : filtersToPass_){
       string name = filterInfo.getParameter<string>("histName");
 
-      float triggerWeight = trigEmulator->GetWeight("EMU_"+name);      
-
-      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo, triggerWeight);
+      if(name == "HLT_OR"){
+	float triggerWeight = trigEmulator->GetWeightOR(jet_pts, tagJet_pts, hT30);
+	hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo, triggerWeight);	
+      }else{
+	float triggerWeight = trigEmulatorDetails->GetWeight("EMU_"+name);      
+	hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo, triggerWeight);
+      }
 
       ++filterNum;
     }
@@ -734,7 +761,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
     //hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30, 1);
 
-    //cout << trigEmulator->GetWeight("EMU_4PF30") << endl;
+    //cout << trigEmulatorDetails->GetWeight("EMU_4PF30") << endl;
 
 
   } else{
@@ -825,6 +852,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     // Now jet turn ons
     //
 
+
     //
     //  Loop on Jets
     //
@@ -836,7 +864,6 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
       if(fabs(eta) > 2.5) continue;
 
-
       // 
       // Loop on filter reqs
       //
@@ -844,12 +871,41 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
       for(edm::ParameterSet jetTurnOnInfo : jetTurnOns_){
 	++turnOnNum;
 
+	//bool printOut = (jetTurnOnInfo.getParameter<string>("numFilterMatch") == "hltL1DoubleJet112er2p3dEtaMax1p6");
+	//printOut = printOut && (jetTurnOnInfo.getParameter<string>("histName") == "L1112TandP");
+
+	//if(printOut){
+	//  
+	//
+	//  vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), "hltL1DoubleJet112er2p3dEtaMax1p6");
+	//  if(itr == filterNames.end()){
+	//    cout << "ERROR not found " << endl;
+	//    continue;
+	//  }
+	//
+	//  unsigned int denIndex = std::distance(filterNames.begin(), itr);
+	//  for(unsigned int iFilt = 0; iFilt < (denIndex+1); ++iFilt){
+	//    if(filterPassed.at(iFilt)){
+	//      cout << "Passed Event" << endl;
+	//    }else{
+	//      printOut = false;
+	//    }
+	//  }
+	//
+	//  vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, "hltL1DoubleJet112er2p3dEtaMax1p6");
+	//  for(auto& trigObj : onlineMatch){
+	//    cout << "\t " << trigObj->pt()  << endl;
+	//    printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
+	//  }
+	//}
+
+
 	//
 	//  Require event filter passed (if requested)
 	//
 	bool passDenominator = true;
-	if(jetTurnOnInfo.exists("denFilter")){
-	  string denName  = jetTurnOnInfo.getParameter<string>("denFilter");
+	if(jetTurnOnInfo.exists("denEventFilter")){
+	  string denName  = jetTurnOnInfo.getParameter<string>("denEventFilter");
 
 	  vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), denName);
 	  if(itr == filterNames.end()){
@@ -863,43 +919,46 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 	      passDenominator = false;
 	    }
 	  }
-	}
+
+	  if(passDenominator && jetTurnOnInfo.exists("denJetMatch") ){
+	    vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, jetTurnOnInfo.getParameter<string>("denJetMatch"));
+	    if(!onlineMatch.size()) passDenominator = false;
+	  }
+		
+	}//denFilter
       
 	//
-	//  Require probe (Matches on the "away side" dR > 0.4)
+	//  Require tag (Matches on the "away side" dR > 0.4)
 	// 
-	if(jetTurnOnInfo.exists("probeFilterMatch")){
-	  string probeName  = jetTurnOnInfo.getParameter<string>("probeFilterMatch");	
-	  bool passProbe = false;
-
-	  //cout << " this jet is pt / eta / phi " << pt << " / " << eta << " / " << phi << endl;
+	if(jetTurnOnInfo.exists("tagFilterMatch")){
+	  string tagName  = jetTurnOnInfo.getParameter<string>("tagFilterMatch");	
+	  unsigned int    tagMin   = jetTurnOnInfo.getParameter<unsigned int>("tagFilterMin");	
 
 	  // Loop on jets{
-	  for(auto& jetProbe : *jetsHandle){
-	    double etaProbe = jetProbe.eta();
-	    double phiProbe = jetProbe.phi();    
+	  unsigned int nTags = 0;
+	  
+	  for(auto& jetTag : *jetsHandle){
+	    double etaTag = jetTag.eta();
+	    double phiTag = jetTag.phi();    
 
 	    //cout << " \t probe cand is pt / eta / phi " << jetProbe.pt() << " / " << etaProbe << " / " << phiProbe << endl;
 	  	  
-	    const float dR2 = reco::deltaR2(eta,phi,etaProbe,phiProbe);
+	    const float dR2 = reco::deltaR2(eta,phi,etaTag,phiTag);
 	    static const float dR2min = 0.4*0.4;
 
 	    if(dR2 < dR2min) 
 	      continue;
 
-	    //cout << " \t pass Probe " << endl;
-	  
-	    // printAllFilters(etaProbe, phiProbe, trigObjsUnpacked);
+	    if(checkFilter(etaTag,phiTag,trigObjsUnpacked,tagName))
+	      nTags++;
 
-	    if(!checkFilter(etaProbe,phiProbe,trigObjsUnpacked,probeName))
-	      continue;
-
-	    passProbe = true;
 	  }
 	
-	  if(!passProbe){
+	  if(nTags < tagMin){
 	    //cout << "Fail probe"<< endl;
 	    passDenominator = false;
+	  }else{
+	    //cout << "Pass tag " << nTags << endl;
 	  }
 
 
@@ -909,15 +968,15 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 	//
 	//  Require tag (Matches on the "near side" dR < 0.4)
 	// 
-	if(jetTurnOnInfo.exists("tagFilterMatch")){
+	if(jetTurnOnInfo.exists("probeCut")){
 
-	  bool passTag = false;
+	  bool passProbeCut = false;
 
 	  // Only support near side btagging and truth bcuts 
-	  string tagName  = jetTurnOnInfo.getParameter<string>("tagFilterMatch");	
+	  string probeName  = jetTurnOnInfo.getParameter<string>("probeCut");	
 	  
-	  bool reqBTag  = (tagName == "Btag"  || tagName == "trueBtag");
-	  bool reqTrueB = (tagName == "trueB" || tagName == "trueBtag");
+	  bool reqBTag  = (probeName == "Btag"  || probeName == "trueBtag");
+	  bool reqTrueB = (probeName == "trueB" || probeName == "trueBtag");
 	  
 	  bool passBTag  = !reqBTag;
 	  bool passTrueB = !reqTrueB;
@@ -968,15 +1027,15 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
 	  }
 	  
-	  passTag = (passBTag & passTrueB);
+	  passProbeCut = (passBTag & passTrueB);
 
-	  if(!passTag){
+	  if(!passProbeCut){
 	    //cout << "Fail tag"<< endl;
 	    passDenominator = false;
 	  }
 
 
-	}// tagFilter Match
+	}// probeCut
 
 
 	if(!passDenominator){
@@ -994,26 +1053,53 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 	bool passNumerator = false;
 	if(jetTurnOnInfo.exists("numFilterMatch")){
 	  string numName  = jetTurnOnInfo.getParameter<string>("numFilterMatch");
-	
+
 	  if(checkFilter(eta,phi,trigObjsUnpacked,numName)){
 	    passNumerator = true;
-	  }
+	  } 
 	}
+
+	//if(printOut && !passNumerator && pt > 300){
+	//
+	//  
+	//  cout << "Failed Numerator pt: " << pt << " " << eta << " " << phi << endl;
+	//  vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), "hltL1DoubleJet112er2p3dEtaMax1p6");
+	//  if(itr == filterNames.end()){
+	//    cout << "ERROR not found " << endl;
+	//    continue;
+	//  }
+	//
+	//  unsigned int denIndex = std::distance(filterNames.begin(), itr);
+	//  for(unsigned int iFilt = 0; iFilt < (denIndex+1); ++iFilt){
+	//    if(filterPassed.at(iFilt)){
+	//      cout << "Passed Event" << endl;
+	//    }
+	//  }
+	//
+	//  printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
+	//  //vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, "hltL1DoubleJet112er2p3dEtaMax1p6");
+	//  //for(auto& trigObj : onlineMatch){
+	//  //  cout << "\t " << trigObj->pt()  << endl;
+	//  //  printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
+	//  //}
+	//  
+	//}
+	
 
 	if(jetTurnOnInfo.exists("numPtCut")){	
 	  string filterMatch  = jetTurnOnInfo.getParameter<string>("numPtName");
 	  double filterPt     = jetTurnOnInfo.getParameter<double>("numPtCut");
 	  vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, filterMatch);
 
-	  if(onlineMatch.size() > 1)
-	    cout << " size of filterMatches " << onlineMatch.size() << endl;
+	  //if(onlineMatch.size() > 1)
+	  // cout << " size of filterMatches " << onlineMatch.size() << endl;
 
 	  for(auto& trigObj : onlineMatch){
 	    if(trigObj->pt() >= filterPt) passNumerator = true;
 	  }
 
 	}
-      
+
 	if(passNumerator){
 	  hJets_num.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
 	}
@@ -1045,6 +1131,118 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
 
   }// not doing emulation
+
+
+  //
+  //  the Trigger study
+  //
+  unsigned int iTrig = 0;
+  for(edm::ParameterSet triggerPath : triggersToPlot_){
+
+
+    string name = triggerPath.getParameter<string>("name");
+
+    //
+    // Require
+    //
+    vector<edm::ParameterSet> requiredTriggers = triggerPath.getParameter<vector<edm::ParameterSet> >("requireOR");
+
+    bool passRequired = false;
+    for(edm::ParameterSet filterInfo : requiredTriggers){
+
+      //
+      // L1
+      //
+      vector<string> L1Paths = filterInfo.getParameter<vector<string> >("L1Paths");      
+      bool passL1 = false;
+      for(const string& L1N : L1Paths){
+    
+	unsigned int L1Index = L1Indices_.at(L1_NamesToPos[L1N]);
+	//cout << "Checking name " << L1N << " at position " << L1_NamesToPos[L1N] << " at index  " << L1Index << " passed ... " << bool(L1word[L1Index]) << endl;
+	if(L1word[L1Index]){
+	  passL1 = true;
+	}
+      }
+      if(!passL1) continue;
+
+      //
+      //  HLT
+      //
+      bool passHLT = false;
+      string HLTPath = filterInfo.getParameter<string >("hltPath");      
+      
+      size_t pathIndex = getPathIndex(HLTPath,trigNames);
+      if(pathIndex>=trigNames.size()) cout <<" path "<<HLTPath<<" not found in menu"<<endl;
+      else{
+	bool accept = trigResultsHandle->accept(pathIndex);
+	if(accept) passHLT = true;
+      }
+
+      if(!passHLT) continue;      
+
+      passRequired = true;
+    }
+
+    //
+    // Veto
+    //
+    bool passVeto = true;
+    if(triggerPath.exists("vetoOR")){	    
+
+      bool passAnyVetoTrigger = false;
+      vector<edm::ParameterSet> vetoedTriggers = triggerPath.getParameter<vector<edm::ParameterSet> >("vetoOR");
+    
+      for(edm::ParameterSet filterInfo : vetoedTriggers){
+    
+	//
+	// L1
+	//
+	vector<string> L1Paths = filterInfo.getParameter<vector<string> >("L1Paths");      
+	bool passL1 = false;
+	for(const string& L1N : L1Paths){
+        
+	  unsigned int L1Index = L1Indices_.at(L1_NamesToPos[L1N]);
+	  //cout << "Checking name " << L1N << " at position " << L1_NamesToPos[L1N] << " at index  " << L1Index << " passed ... " << bool(L1word[L1Index]) << endl;
+	  if(L1word[L1Index]){
+	    passL1 = true;
+	  }
+	}
+
+	if(!passL1) continue;    
+    
+	//
+	//  HLT
+	//
+	bool passHLT = false;
+	string HLTPath = filterInfo.getParameter<string >("hltPath");      
+          
+	size_t pathIndex = getPathIndex(HLTPath,trigNames);
+	if(pathIndex>=trigNames.size()) cout <<" path "<<HLTPath<<" not found in menu"<<endl;
+	else{
+	  bool accept = trigResultsHandle->accept(pathIndex);
+	  if(accept) passHLT = true;
+	}
+
+	if(!passHLT) continue;    
+    
+	passAnyVetoTrigger = true;
+      }
+
+      if(passAnyVetoTrigger) passVeto = false;
+
+    }// Veto
+
+    
+    //
+    //  If fail requirementss
+    // 
+    if(passRequired && passVeto){
+      hTrigStudy.at(iTrig).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo);
+    }
+    
+    ++iTrig;
+  }
+
 
 
 
