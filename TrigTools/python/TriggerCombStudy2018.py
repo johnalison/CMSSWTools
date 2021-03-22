@@ -84,7 +84,6 @@ triggersToStudy = cms.VPSet(
              vetoOR=cms.VPSet(HLT_Ht330_4j_3b, HLT_2j116_dEta1p6_2b),
          ),
     
-    
     cms.PSet(name=cms.string("j500"),
              requireOR=cms.VPSet(HLT_j500),
              vetoOR=cms.VPSet(HLT_Ht330_4j_3b, HLT_2j116_dEta1p6_2b),

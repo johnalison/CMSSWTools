@@ -862,6 +862,8 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
       double phi = jet.phi();    
       double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
 
+      //printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
+
       if(fabs(eta) > 2.5) continue;
 
       // 
@@ -909,7 +911,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
 	  vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), denName);
 	  if(itr == filterNames.end()){
-	    cout << "ERROR " << denName << " not found " << endl;
+	    cout << "ERROR denEventFilter " << denName << " not found in filterNames  " << endl;
 	    continue;
 	  }
 

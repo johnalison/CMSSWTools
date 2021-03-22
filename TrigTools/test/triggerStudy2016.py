@@ -28,7 +28,7 @@ process = cms.Process("TriggerStudy")
 
 if not options.globalTag:
     print "ERROR : specify globalTag"
-    print "\t eg: for MC17 we have used 94X_mc2017_realistic_v14 "
+    print "\t eg: for MC16 we have used test 94X_mcRun2_asymptotic_v3"
     print "\t get this from the dataset name"
     print "\t exiting..."
     import sys
@@ -52,7 +52,8 @@ process.GlobalTag = GlobalTag(process.GlobalTag, str(options.globalTag), '')
 #                            fileNames = cms.untracked.vstring("/store/mc/RunIIAutumn18MiniAOD/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/90000/8D07021F-FD00-D442-B0E6-9077266B320B.root")
                             #)
 
-from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIIFall17MiniAODv2_MINIAODSIM import ZH_HToBB_ZToBB_source
+
+from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIISummer16MiniAODv3_MINIAODSIM import ZH_HToBB_ZToBB_source
 process.source = ZH_HToBB_ZToBB_source
 
 
@@ -68,34 +69,34 @@ process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32 (options.maxEvents)
 )
 
-#
-#  TurnOns for HT330 + 4j + 3b
-#
-from CMSSWTools.TrigTools.TurnOns_Ht300_4j_3b_2017 import triggerConfig_Ht300_4j_3b, triggerConfigL1Unprescaled_Ht300_4j_3b, triggerStudyBase_Ht300_4j_3b
-triggerStudyBase_Ht300_4j_3b.isMC = cms.bool(options.isMC)
-triggerStudyBase_Ht300_4j_3b.isBBMC = cms.bool(options.isMC)
-
-#
-#  TurnOns for 2b
-#
-from CMSSWTools.TrigTools.TurnOns_2b100_2017 import triggerConfig_2b100, triggerConfigL1Unprescaled_2b100, triggerStudyBase_2b100
-triggerStudyBase_2b100.isMC = cms.bool(options.isMC)
-triggerStudyBase_2b100.isBBMC = cms.bool(options.isMC)
-
-
-
-hltSeeds = [("",     cms.vstring()), 
-            ("HT180",cms.vstring("HLT_PFHT180_v")),
-            ("HT250",cms.vstring("HLT_PFHT250_v")),
-            ]
-
-L1Seeds_ht_4j = [("HLTOnly",       triggerConfig_Ht300_4j_3b),
-                 ("L1Unprescaled", triggerConfigL1Unprescaled_Ht300_4j_3b),
-             ]
-
-L1Seeds_2j100 = [("HLTOnly",       triggerConfig_2b100),
-                 ("L1Unprescaled", triggerConfigL1Unprescaled_2b100),
-                 ]
+#####
+#####  TurnOns for HT330 + 4j + 3b
+#####
+####from CMSSWTools.TrigTools.TurnOns_Ht300_4j_3b_2017 import triggerConfig_Ht300_4j_3b, triggerConfigL1Unprescaled_Ht300_4j_3b, triggerStudyBase_Ht300_4j_3b
+####triggerStudyBase_Ht300_4j_3b.isMC = cms.bool(options.isMC)
+####triggerStudyBase_Ht300_4j_3b.isBBMC = cms.bool(options.isMC)
+####
+#####
+#####  TurnOns for 2b
+#####
+####from CMSSWTools.TrigTools.TurnOns_2b100_2017 import triggerConfig_2b100, triggerConfigL1Unprescaled_2b100, triggerStudyBase_2b100
+####triggerStudyBase_2b100.isMC = cms.bool(options.isMC)
+####triggerStudyBase_2b100.isBBMC = cms.bool(options.isMC)
+####
+####
+####
+####hltSeeds = [("",     cms.vstring()), 
+####            ("HT125",cms.vstring("HLT_PFHT125_v")),
+####            ("HT200",cms.vstring("HLT_PFHT200_v")),
+####            ]
+####
+####L1Seeds_ht_4j = [("HLTOnly",       triggerConfig_Ht300_4j_3b),
+####                 ("L1Unprescaled", triggerConfigL1Unprescaled_Ht300_4j_3b),
+####             ]
+####
+####L1Seeds_2j100 = [("HLTOnly",       triggerConfig_2b100),
+####                 ("L1Unprescaled", triggerConfigL1Unprescaled_2b100),
+####                 ]
 
 offlinePreSelection = [("",             cms.PSet()),
                        ("PassNJet",     cms.PSet(minNSelJet = cms.uint32(4))),
@@ -109,57 +110,57 @@ offlinePreSelection = [("",             cms.PSet()),
 process.p = cms.Path()
 
 
-
-for h in hltSeeds: 
-    
-    hltName = h[0]
-    
-    for o in offlinePreSelection:
-        
-        offName = o[0]
-        offPreSelection = o[1]
-
-        #
-        #   HT300_4j_3b
-        #
-        for l in L1Seeds_ht_4j:
-         
-            l1Name = l[0]
-
-
-            hltPreSelection = h[1]
-            filtersToPass = l[1]
-
-            triggerStudyConfigured = triggerStudyBase_Ht300_4j_3b.clone()
-            triggerStudyConfigured.filtersToPass = filtersToPass
-            triggerStudyConfigured.offlinePreSelection = offPreSelection
-            triggerStudyConfigured.hltPreSelection = hltPreSelection
-
-            fullName = "triggerStudy_Ht300_4j_3b_"+hltName+l1Name+offName
-
-            setattr(process,fullName,triggerStudyConfigured)
-            process.p *= getattr(process,fullName)
-
-
-        #
-        #   2b100
-        #
-        for l in L1Seeds_2j100:
-         
-            l1Name = l[0]
-
-            hltPreSelection = h[1]
-            filtersToPass = l[1]
-
-            triggerStudyConfigured = triggerStudyBase_2b100.clone()
-            triggerStudyConfigured.filtersToPass = filtersToPass
-            triggerStudyConfigured.offlinePreSelection = offPreSelection
-            triggerStudyConfigured.hltPreSelection = hltPreSelection
-
-            fullName = "triggerStudy_2b100_"+hltName+l1Name+offName
-
-            setattr(process,fullName,triggerStudyConfigured)
-            process.p *= getattr(process,fullName)
+####
+####for h in hltSeeds: 
+####    
+####    hltName = h[0]
+####    
+####    for o in offlinePreSelection:
+####        
+####        offName = o[0]
+####        offPreSelection = o[1]
+####
+####        #
+####        #   HT300_4j_3b
+####        #
+####        for l in L1Seeds_ht_4j:
+####         
+####            l1Name = l[0]
+####
+####
+####            hltPreSelection = h[1]
+####            filtersToPass = l[1]
+####
+####            triggerStudyConfigured = triggerStudyBase_Ht300_4j_3b.clone()
+####            triggerStudyConfigured.filtersToPass = filtersToPass
+####            triggerStudyConfigured.offlinePreSelection = offPreSelection
+####            triggerStudyConfigured.hltPreSelection = hltPreSelection
+####
+####            fullName = "triggerStudy_Ht300_4j_3b_"+hltName+l1Name+offName
+####
+####            setattr(process,fullName,triggerStudyConfigured)
+####            process.p *= getattr(process,fullName)
+####
+####
+####        #
+####        #   2b100
+####        #
+####        for l in L1Seeds_2j100:
+####         
+####            l1Name = l[0]
+####
+####            hltPreSelection = h[1]
+####            filtersToPass = l[1]
+####
+####            triggerStudyConfigured = triggerStudyBase_2b100.clone()
+####            triggerStudyConfigured.filtersToPass = filtersToPass
+####            triggerStudyConfigured.offlinePreSelection = offPreSelection
+####            triggerStudyConfigured.hltPreSelection = hltPreSelection
+####
+####            fullName = "triggerStudy_2b100_"+hltName+l1Name+offName
+####
+####            setattr(process,fullName,triggerStudyConfigured)
+####            process.p *= getattr(process,fullName)
 
 
 
@@ -193,7 +194,7 @@ for h in hltSeeds:
 #
 #  Trigger Study
 #
-from CMSSWTools.TrigTools.TriggerCombStudy2017 import triggerCombStudy
+from CMSSWTools.TrigTools.TriggerCombStudy2016 import triggerCombStudy
 
 triggerCombStudy.isMC = cms.bool(options.isMC)
 triggerCombStudy.isBBMC = cms.bool(options.isMC)
