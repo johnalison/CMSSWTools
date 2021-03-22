@@ -42,7 +42,7 @@ HLT_2j_2j_3b = cms.PSet(hltPath = cms.string("HLT_DoubleJet90_Double30_TripleBTa
 
 HLT_2b100 = cms.PSet(hltPath=cms.string("HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6_v"),
                      L1Paths = cms.vstring("L1_DoubleJetC100","L1_SingleJet200"),
-                 )
+)
 
 
 

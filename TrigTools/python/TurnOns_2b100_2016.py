@@ -1,8 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-         #hltL1DoubleJet100er2p3dEtaMax1p6Ior112er2p3dEtaMax1p6
-L1Name = "hltL1DoubleJet100er2p3dEtaMax1p6Ior112er2p3dEtaMax1p6"
-#L1Name = "hltL1DoubleJet100er2p3dEtaMax1p6"
+L1Name = "hltL1sDoubleJetC100IorDoubleJetC112IorDoubleJetC120IorSingleJet200"
 
 #
 #  Jet trigger turn ons
@@ -14,7 +12,7 @@ jetTurnOnConfig = cms.VPSet(
 
     cms.PSet(numFilterMatch = cms.string(L1Name),
              histName = cms.string("L1100DenMatch"),
-             denEventFilter = cms.string("hltDoubleCaloBJets100eta2p3"), 
+             denEventFilter = cms.string("hltDoubleJetsC100"),
          ),
 
     cms.PSet(numFilterMatch = cms.string(L1Name),
@@ -27,7 +25,7 @@ jetTurnOnConfig = cms.VPSet(
     cms.PSet(numFilterMatch = cms.string("hltL1sSingleJet60"),
              histName = cms.string("L1100PtReq"),
              numPtName = cms.string("hltL1sSingleJet60"),
-             numPtCut = cms.double(100),
+             numPtCut = cms.double(110),
              #denEventFilter = cms.string("hltL1sSingleJet60"),
              denJetMatch = cms.string("hltL1sSingleJet60"),
          ),
@@ -45,12 +43,12 @@ jetTurnOnConfig = cms.VPSet(
     #
     #  Calo 100
     #
-    cms.PSet(numFilterMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
+    cms.PSet(numFilterMatch = cms.string("hltDoubleJetsC100"),
              histName = cms.string("Calo100"),
              denEventFilter = cms.string(L1Name),
          ),
 
-    cms.PSet(numFilterMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
+    cms.PSet(numFilterMatch = cms.string("hltDoubleJetsC100"),
              histName = cms.string("Calo100DenMatch"),
              denEventFilter = cms.string(L1Name),
              denJetMatch = cms.string(L1Name),
@@ -58,20 +56,20 @@ jetTurnOnConfig = cms.VPSet(
 
 
 
-    cms.PSet(numFilterMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
+    cms.PSet(numFilterMatch = cms.string("hltDoubleJetsC100"),
              histName = cms.string("Calo100TandP"),
-             denEventFilter = cms.string("hltDoubleCaloBJets100eta2p3"),
-             tagFilterMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
+             denEventFilter = cms.string("hltDoubleJetsC100"),
+             tagFilterMatch = cms.string("hltDoubleJetsC100"),
              tagFilterMin = cms.uint32(2)
          ),
 
 
 
-    cms.PSet(numFilterMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
+    cms.PSet(numFilterMatch = cms.string("hltDoubleJetsC100"),
              histName = cms.string("Calo100TandPDenMatch"),
-             denEventFilter = cms.string("hltDoubleCaloBJets100eta2p3"),
+             denEventFilter = cms.string("hltDoubleJetsC100"),
              denJetMatch = cms.string("hltL1sSingleJet60"),
-             tagFilterMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
+             tagFilterMatch = cms.string("hltDoubleJetsC100"),
              tagFilterMin = cms.uint32(2)
          ),
 
@@ -79,29 +77,29 @@ jetTurnOnConfig = cms.VPSet(
     #
     #  Calo BTag
     #
-    cms.PSet(numFilterMatch = cms.string("hltBTagCalo80x6CSVp0p92DoubleWithMatching"),
-             histName = cms.string("CaloDeepCSV0p7MatchTrueB"),
-             denEventFilter = cms.string("hltDoubleCaloBJets100eta2p3"),
+    cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp014DoubleWithMatching"),
+             histName = cms.string("CaloDeepCSV0p84MatchTrueB"),
+             denEventFilter = cms.string("hltDoubleJetsC100"),
              probeCut = cms.string("trueB"),
          ),
 
-    cms.PSet(numFilterMatch = cms.string("hltBTagCalo80x6CSVp0p92DoubleWithMatching"), 
-             histName = cms.string("CaloDeepCSV0p7MatchTrueBtag"),
-             denEventFilter = cms.string("hltDoubleCaloBJets100eta2p3"),
+    cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp014DoubleWithMatching"), 
+             histName = cms.string("CaloDeepCSV0p84MatchTrueBtag"),
+             denEventFilter = cms.string("hltDoubleJetsC100"),
              probeCut = cms.string("trueBtag"),
          ),
 
-    cms.PSet(numFilterMatch = cms.string("hltBTagCalo80x6CSVp0p92DoubleWithMatching"), 
-             histName = cms.string("CaloDeepCSV0p7MatchBtag"),
-             denEventFilter = cms.string("hltDoubleCaloBJets100eta2p3"),
+    cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp014DoubleWithMatching"), 
+             histName = cms.string("CaloDeepCSV0p84MatchBtag"),
+             denEventFilter = cms.string("hltDoubleJetsC100"),
              probeCut = cms.string("Btag"),
          ),
 
 
-    cms.PSet(numFilterMatch = cms.string("hltBTagCalo80x6CSVp0p92DoubleWithMatching"), 
-             histName = cms.string("CaloDeepCSV0p7MatchBtagDenMatch"),
-             denEventFilter = cms.string("hltDoubleCaloBJets100eta2p3"),
-             denJetMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
+    cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp014DoubleWithMatching"), 
+             histName = cms.string("CaloDeepCSV0p84MatchBtagDenMatch"),
+             denEventFilter = cms.string("hltDoubleJetsC100"),
+             denJetMatch = cms.string("hltDoubleJetsC100"),
              probeCut = cms.string("Btag"),
          ),
 
@@ -109,29 +107,29 @@ jetTurnOnConfig = cms.VPSet(
     #  PFJet 100
     #
 
-    cms.PSet(numFilterMatch = cms.string("hltDoublePFJets100Eta2p3"), 
+    cms.PSet(numFilterMatch = cms.string("hltDoublePFJetsC100"), 
              histName = cms.string("PFJets100"),
-             denEventFilter = cms.string("hltBTagCalo80x6CSVp0p92DoubleWithMatching"),
+             denEventFilter = cms.string("hltBTagCaloCSVp014DoubleWithMatching"),
          ),
 
-    cms.PSet(numFilterMatch = cms.string("hltDoublePFJets100Eta2p3"), 
+    cms.PSet(numFilterMatch = cms.string("hltDoublePFJetsC100"), 
              histName = cms.string("PFJets100DenMatch"),
-             denEventFilter = cms.string("hltBTagCalo80x6CSVp0p92DoubleWithMatching"),
-             denJetMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
+             denEventFilter = cms.string("hltBTagCaloCSVp014DoubleWithMatching"),
+             denJetMatch = cms.string("hltDoubleJetsC100"),
          ),
 
     #
     #  DR
     #
-    cms.PSet(numFilterMatch = cms.string("hltDoublePFJets100Eta2p3MaxDeta1p6"), 
+    cms.PSet(numFilterMatch = cms.string("hltDoublePFJetsC100MaxDeta1p6"), 
              histName = cms.string("PFJets100Dr"),
-             denEventFilter = cms.string("hltDoublePFJets100Eta2p3"),
+             denEventFilter = cms.string("hltDoublePFJetsC100"),
          ),
 
-    cms.PSet(numFilterMatch = cms.string("hltDoublePFJets100Eta2p3MaxDeta1p6"), 
+    cms.PSet(numFilterMatch = cms.string("hltDoublePFJetsC100MaxDeta1p6"), 
              histName = cms.string("PFJets100DrDenMatch"),
-             denEventFilter = cms.string("hltDoublePFJets100Eta2p3"),
-             denJetMatch = cms.string("hltDoublePFJets100Eta2p3"),
+             denEventFilter = cms.string("hltDoublePFJetsC100"),
+             denJetMatch = cms.string("hltDoublePFJetsC100"),
          ),
 
 
@@ -150,22 +148,22 @@ triggerConfig_2b100 = cms.VPSet(
              pt = cms.double(-1.0)),
 
 
-    cms.PSet(filterName = cms.string("hltDoubleCaloBJets100eta2p3"),
+    cms.PSet(filterName = cms.string("hltDoubleJetsC100"),
              histName = cms.string("2Calo100"),
              mult = cms.uint32(2),
              pt = cms.double(-1.0)),
 
-    cms.PSet(filterName = cms.string("hltBTagCalo80x6CSVp0p92DoubleWithMatching"),
+    cms.PSet(filterName = cms.string("hltBTagCaloCSVp014DoubleWithMatching"),
              histName = cms.string("2CaloBTags"),
              mult = cms.uint32(2),
              pt = cms.double(-1)),
 
-    cms.PSet(filterName = cms.string("hltDoublePFJets100Eta2p3"),
+    cms.PSet(filterName = cms.string("hltDoublePFJetsC100"),
              histName = cms.string("2PF100"),
              mult = cms.uint32(2),
              pt = cms.double(100)),
 
-    cms.PSet(filterName = cms.string("hltDoublePFJets100Eta2p3MaxDeta1p6"),
+    cms.PSet(filterName = cms.string("hltDoublePFJetsC100MaxDeta1p6"),
              histName = cms.string("2PF100dR"),
              mult = cms.uint32(1),
              pt = cms.double(100)),
@@ -177,7 +175,7 @@ triggerConfig_2b100 = cms.VPSet(
 #  L1 Requirements
 #
 
-triggerConfigL1Unprescaled_L1_2b100 = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_DoubleJet100er2p3_dEta_Max1p6"),
+triggerConfigL1Unprescaled_L1_2b100 = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_DoubleJetC100","L1_SingleJet200"),
                                                          histName = cms.string("passL1"),
                                                          mult = cms.uint32(1),
                                                          pt = cms.double(-1.0))

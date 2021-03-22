@@ -55,7 +55,6 @@ process.GlobalTag = GlobalTag(process.GlobalTag, str(options.globalTag), '')
 from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIIFall17MiniAODv2_MINIAODSIM import ZH_HToBB_ZToBB_source
 process.source = ZH_HToBB_ZToBB_source
 
-
 #process.source = cms.Source("PoolSource",
 #                              fileNames = cms.untracked.vstring("/store/data/Run2018D/JetHT/MINIAOD/PromptReco-v2/000/320/500/00000/048048EB-EA95-E811-9A1D-FA163ECE26BB.root")
 #)

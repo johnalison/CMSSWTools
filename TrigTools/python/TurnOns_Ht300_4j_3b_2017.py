@@ -227,9 +227,9 @@ triggerConfig_Ht300_4j_3b = cms.VPSet(
 #
 
 triggerConfigL1Unprescaled_L1_Ht300_4j_3b = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_QuadJet60er3p0", "L1_HTT380er", "L1_HTT280er_QuadJet_70_55_40_35_er2p5"),
-                                                histName = cms.string("passL1"),
-                                                mult = cms.uint32(1),
-                                                pt = cms.double(-1.0))
+                                                               histName = cms.string("passL1"),
+                                                               mult = cms.uint32(1),
+                                                               pt = cms.double(-1.0))
                                    )
 triggerConfigL1Unprescaled_Ht300_4j_3b = triggerConfigL1Unprescaled_L1_Ht300_4j_3b.copy()
 triggerConfigL1Unprescaled_Ht300_4j_3b.extend(triggerConfig_Ht300_4j_3b)
