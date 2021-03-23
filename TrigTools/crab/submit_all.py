@@ -107,7 +107,8 @@ def main():
         config.General.requestName = requestname
         config.Data.inputDataset = job
         if datatier == 'MINIAODSIM': 
-          config.Data.splitting = 'FileBased'
+          #config.Data.splitting = 'FileBased'
+          config.Data.splitting = 'Automatic'
         elif datatier == 'AODSIM': 
           config.Data.splitting = 'FileBased'
         elif datatier == 'MINIAOD': 

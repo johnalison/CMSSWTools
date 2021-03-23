@@ -15,7 +15,7 @@ triggerEmulation = cms.EDAnalyzer("TriggerStudy",
                                   hltPreSelection = cms.vstring(),
                                   offlinePreSelection = cms.PSet(),
                                   pathsToPass = cms.vstring(""),
-                                  year = cms.string("2018"),
+                                  year = cms.string("2017"),
                                   jets = cms.InputTag("slimmedJets"),
                                   L1Jets = cms.InputTag("caloStage2Digis","Jet"),
                                   truthJets = cms.InputTag("slimmedGenJets"),
@@ -30,25 +30,25 @@ triggerEmulation = cms.EDAnalyzer("TriggerStudy",
 #
 triggerConfigEMU = cms.VPSet(
     
-    # HT330_4j_3b
+    # HT300_4j_3b
     cms.PSet(histName = cms.string("L1ORAll")),
     ##cms.PSet(histName = cms.string("4Calo30")),  ## Fully efficieny
-    cms.PSet(histName = cms.string("CaloHt320")),
+    cms.PSet(histName = cms.string("CaloHt300")),
     #cms.PSet(histName = cms.string("2CaloBTags")), ## Fully efficieny for 4b presection
     cms.PSet(histName = cms.string("4PF30")), ## Fully efficieny for 4b presection
     cms.PSet(histName = cms.string("1PF75")),
     cms.PSet(histName = cms.string("2PF60")),
     cms.PSet(histName = cms.string("3PF45")),
     cms.PSet(histName = cms.string("4PF40")),
-    cms.PSet(histName = cms.string("PFHt330")),
+    cms.PSet(histName = cms.string("PFHt300")),
     #cms.PSet(histName = cms.string("3PFBtags")),
-    cms.PSet(histName = cms.string("HT330_4j_3b")),
+    cms.PSet(histName = cms.string("HT300_4j_3b")),
 
-    cms.PSet(histName = cms.string("2b116_L1ORAll")),
-    cms.PSet(histName = cms.string("2b116_2Calo100")),
-    cms.PSet(histName = cms.string("2b116_2CaloBTags")),
-    cms.PSet(histName = cms.string("2b116_2PF116")),
-    cms.PSet(histName = cms.string("2b116")),
+    cms.PSet(histName = cms.string("2b100_L1ORAll")),
+    cms.PSet(histName = cms.string("2b100_2Calo100")),
+    cms.PSet(histName = cms.string("2b100_2CaloBTags")),
+    cms.PSet(histName = cms.string("2b100_2PF100")),
+    cms.PSet(histName = cms.string("2b100")),
 
     cms.PSet(histName = cms.string("HLT_OR")),
 

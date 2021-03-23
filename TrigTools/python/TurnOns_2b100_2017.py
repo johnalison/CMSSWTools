@@ -34,7 +34,7 @@ jetTurnOnConfig = cms.VPSet(
     
 
     cms.PSet(numFilterMatch = cms.string(L1Name),
-             histName = cms.string("L1112TandPDenMatch"),
+             histName = cms.string("L1100TandPDenMatch"),
              denEventFilter = cms.string(L1Name),
              denJetMatch = cms.string("hltL1sSingleJet60"),
              tagFilterMatch = cms.string(L1Name),

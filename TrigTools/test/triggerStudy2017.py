@@ -165,28 +165,27 @@ for h in hltSeeds:
 
 
 
-####
-####  Trigger Emulation
-####
-###from CMSSWTools.TrigTools.TriggerEmulation2018 import triggerEmulation
-###
-###triggerEmulation.isMC = cms.bool(options.isMC)
-###triggerEmulation.isBBMC = cms.bool(options.isMC)
-###
-###
-###for o in offlinePreSelection:
-###
-###    offName = o[0]
-###    offPreSelection = o[1]
-###
-###
-###    triggerEmulationConfigured = triggerEmulation.clone()
-###    triggerEmulationConfigured.offlinePreSelection = offPreSelection
-###
-###    fullName = "triggerEmulation"+offName
-###
-###    setattr(process,fullName,triggerEmulationConfigured)
-###    process.p *= getattr(process,fullName)
+#
+#  Trigger Emulation
+#
+from CMSSWTools.TrigTools.TriggerEmulation2017 import triggerEmulation
+
+triggerEmulation.isMC = cms.bool(options.isMC)
+triggerEmulation.isBBMC = cms.bool(options.isMC)
+
+
+for o in offlinePreSelection:
+
+    offName = o[0]
+    offPreSelection = o[1]
+
+    triggerEmulationConfigured = triggerEmulation.clone()
+    triggerEmulationConfigured.offlinePreSelection = offPreSelection
+
+    fullName = "triggerEmulation"+offName
+
+    setattr(process,fullName,triggerEmulationConfigured)
+    process.p *= getattr(process,fullName)
 
 
 #
