@@ -26,22 +26,26 @@ options.parseArguments()
 # set up process
 process = cms.Process("TriggerStudy")
 
-if not options.globalTag:
-    print "ERROR : specify globalTag"
-    print "\t eg: for MC17 we have used 94X_mc2017_realistic_v14 "
-    print "\t get this from the dataset name"
-    print "\t exiting..."
-    import sys
-    sys.exit(-1)
-    
+#
+#  Get the global Tag
+#
+if options.isMC:
+    globalTag = "94X_mc2017_realistic_v14"
+else:
+    globalTag = "94X_dataRun2_ReReco_EOY17_v2"
+
+if not options.globalTag is None:
+    print "Overidding global tag with",options.globalTag
+    globalTag = options.globalTag
+
 
 #
 # Setup L1
 #
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
-print "globalTag is ",options.globalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, str(options.globalTag), '')
+print "globalTag is ",globalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, str(globalTag), '')
     
 
 #
@@ -51,13 +55,14 @@ process.GlobalTag = GlobalTag(process.GlobalTag, str(options.globalTag), '')
 #process.source = cms.Source("PoolSource",
 #                            fileNames = cms.untracked.vstring("/store/mc/RunIIAutumn18MiniAOD/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/90000/8D07021F-FD00-D442-B0E6-9077266B320B.root")
                             #)
+if options.isMC:
+    from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIIFall17MiniAODv2_MINIAODSIM import ZH_HToBB_ZToBB_source
+    process.source = ZH_HToBB_ZToBB_source
+else:
+    process.source = cms.Source("PoolSource",
+                                fileNames = cms.untracked.vstring("/store/data/Run2017C/JetHT/MINIAOD/17Nov2017-v1/30000/1EAC0263-39D5-E711-8937-4C79BA180A7B.root"),
+    )
 
-from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIIFall17MiniAODv2_MINIAODSIM import ZH_HToBB_ZToBB_source
-process.source = ZH_HToBB_ZToBB_source
-
-#process.source = cms.Source("PoolSource",
-#                              fileNames = cms.untracked.vstring("/store/data/Run2018D/JetHT/MINIAOD/PromptReco-v2/000/320/500/00000/048048EB-EA95-E811-9A1D-FA163ECE26BB.root")
-#)
 process.TFileService = cms.Service("TFileService", fileName = cms.string (options.outputFile))
 
 

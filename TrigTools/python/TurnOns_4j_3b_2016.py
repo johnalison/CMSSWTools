@@ -23,7 +23,7 @@ jetTurnOnConfig = cms.VPSet(
     cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp087Triple"),
              histName = cms.string("CaloCSVMatchBtag"),
              denEventFilter = cms.string("hltQuadCentralJet45"),
-             probeFilterMatch = cms.string("Btag"),
+             probeCut = cms.string("Btag"),
          ),
 
 
@@ -31,7 +31,7 @@ jetTurnOnConfig = cms.VPSet(
              histName = cms.string("CaloCSVMatchBtagDenMatch"),
              denEventFilter = cms.string("hltQuadCentralJet45"),
              denJetMatch = cms.string("hltQuadCentralJet45"),
-             probeFilterMatch = cms.string("Btag"),
+             probeCut = cms.string("Btag"),
          ),
 
 
@@ -40,14 +40,14 @@ jetTurnOnConfig = cms.VPSet(
              histName = cms.string("CaloCSVMatchTrueB"),
              denEventFilter = cms.string("hltQuadCentralJet45"),
              denJetMatch = cms.string("hltQuadCentralJet45"),
-             probeFilterMatch = cms.string("trueB"),
+             probeCut = cms.string("trueB"),
          ),
 
     cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp087Triple"),
              histName = cms.string("CaloCSVMatchTrueBtag"),
              denEventFilter = cms.string("hltQuadCentralJet45"),
              denJetMatch = cms.string("hltQuadCentralJet45"),
-             probeFilterMatch = cms.string("trueBtag"),
+             probeCut = cms.string("trueBtag"),
          ),
 
 

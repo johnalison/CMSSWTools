@@ -26,7 +26,7 @@ jetTurnOnConfig = cms.VPSet(
     cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp05Double"), 
              histName = cms.string("CaloDeepCSVMatchBtag"),
              denEventFilter = cms.string("hltCaloQuadJet30HT300"),
-             probeFilterMatch = cms.string("Btag"),
+             probeCut = cms.string("Btag"),
          ),
 
 
@@ -34,13 +34,13 @@ jetTurnOnConfig = cms.VPSet(
              histName = cms.string("CaloDeepCSVMatchBtagDenMatch"),
              denEventFilter = cms.string("hltCaloQuadJet30HT300"),
              denJetMatch = cms.string("hltQuadCentralJet30"),
-             probeFilterMatch = cms.string("Btag"),
+             probeCut = cms.string("Btag"),
          ),
 
     cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp05Double"), 
              histName = cms.string("CaloDeepCSVMatchTrueB"),
              denEventFilter = cms.string("hltCaloQuadJet30HT300"),
-             probeFilterMatch = cms.string("trueB"),
+             probeCut = cms.string("trueB"),
          ),
 
     #
@@ -128,7 +128,7 @@ jetTurnOnConfig = cms.VPSet(
     cms.PSet(numFilterMatch = cms.string("hltBTagPFCSVp070Triple"),
              histName = cms.string("PFDeepCSVMatchBtag"),
              denEventFilter = cms.string("hltPFCentralJetsLooseIDQuad30HT300"),
-             probeFilterMatch = cms.string("Btag"),
+             probeCut = cms.string("Btag"),
          ),
 
 
@@ -136,7 +136,7 @@ jetTurnOnConfig = cms.VPSet(
              histName = cms.string("PFDeepCSVMatchBtagDenMatch"),
              denEventFilter = cms.string("hltPFCentralJetsLooseIDQuad30HT300"),
              denJetMatch = cms.string("hlt4PFCentralJetLooseID40"),
-             probeFilterMatch = cms.string("Btag"),
+             probeCut = cms.string("Btag"),
          ),
 
 
@@ -145,14 +145,14 @@ jetTurnOnConfig = cms.VPSet(
              histName = cms.string("PFDeepCSVMatchTrueB"),
              denEventFilter = cms.string("hltPFCentralJetsLooseIDQuad30HT300"),
              denJetMatch = cms.string("hlt4PFCentralJetLooseID40"),
-             probeFilterMatch = cms.string("trueB"),
+             probeCut = cms.string("trueB"),
          ),
 
     cms.PSet(numFilterMatch = cms.string("hltBTagPFCSVp070Triple"),
              histName = cms.string("PFDeepCSVMatchTrueBtag"),
              denEventFilter = cms.string("hltPFCentralJetsLooseIDQuad30HT300"),
              denJetMatch = cms.string("hlt4PFCentralJetLooseID40"),
-             probeFilterMatch = cms.string("trueBtag"),
+             probeCut = cms.string("trueBtag"),
          ),
 
 

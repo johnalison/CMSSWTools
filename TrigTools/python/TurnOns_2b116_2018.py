@@ -32,7 +32,23 @@ jetTurnOnConfig = cms.VPSet(
     cms.PSet(numFilterMatch = cms.string("hltL1DoubleJet112er2p3dEtaMax1p6"),
              histName = cms.string("L1112TandPDenMatch"),
              denEventFilter = cms.string("hltL1DoubleJet112er2p3dEtaMax1p6"),
-             denJetMatch = cms.string("hltL1sSingleJet60"),
+             denJetMatch = cms.string("hltL1sSingleJet60"), # Not in data
+             tagFilterMatch = cms.string("hltL1DoubleJet112er2p3dEtaMax1p6"),
+             tagFilterMin = cms.uint32(2)
+         ),
+
+    cms.PSet(numFilterMatch = cms.string("hltL1DoubleJet112er2p3dEtaMax1p6"),
+             histName = cms.string("L1112TandPDenMatch100"),
+             denEventFilter = cms.string("hltL1DoubleJet112er2p3dEtaMax1p6"),
+             denJetMatch = cms.string("hltDoubleCaloBJets100eta2p3"), 
+             tagFilterMatch = cms.string("hltL1DoubleJet112er2p3dEtaMax1p6"),
+             tagFilterMin = cms.uint32(2)
+         ),
+
+    cms.PSet(numFilterMatch = cms.string("hltL1DoubleJet112er2p3dEtaMax1p6"),
+             histName = cms.string("L1112TandPDenMatchHT"),
+             denEventFilter = cms.string("hltL1DoubleJet112er2p3dEtaMax1p6"),
+             denJetMatch = cms.string("hltL1sHTT120er"), 
              tagFilterMatch = cms.string("hltL1DoubleJet112er2p3dEtaMax1p6"),
              tagFilterMin = cms.uint32(2)
          ),

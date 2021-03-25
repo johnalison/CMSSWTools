@@ -32,7 +32,7 @@ jetTurnOnConfig = cms.VPSet(
     
 
     cms.PSet(numFilterMatch = cms.string(L1Name),
-             histName = cms.string("L1112TandPDenMatch"),
+             histName = cms.string("L100TandPDenMatch"),
              denEventFilter = cms.string(L1Name),
              denJetMatch = cms.string("hltL1sSingleJet60"),
              tagFilterMatch = cms.string(L1Name),
@@ -78,26 +78,26 @@ jetTurnOnConfig = cms.VPSet(
     #  Calo BTag
     #
     cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp014DoubleWithMatching"),
-             histName = cms.string("CaloDeepCSV0p84MatchTrueB"),
+             histName = cms.string("CaloCSV0p84MatchTrueB"),
              denEventFilter = cms.string("hltDoubleJetsC100"),
              probeCut = cms.string("trueB"),
          ),
 
     cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp014DoubleWithMatching"), 
-             histName = cms.string("CaloDeepCSV0p84MatchTrueBtag"),
+             histName = cms.string("CaloCSV0p84MatchTrueBtag"),
              denEventFilter = cms.string("hltDoubleJetsC100"),
              probeCut = cms.string("trueBtag"),
          ),
 
     cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp014DoubleWithMatching"), 
-             histName = cms.string("CaloDeepCSV0p84MatchBtag"),
+             histName = cms.string("CaloCSV0p84MatchBtag"),
              denEventFilter = cms.string("hltDoubleJetsC100"),
              probeCut = cms.string("Btag"),
          ),
 
 
     cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp014DoubleWithMatching"), 
-             histName = cms.string("CaloDeepCSV0p84MatchBtagDenMatch"),
+             histName = cms.string("CaloCSV0p84MatchBtagDenMatch"),
              denEventFilter = cms.string("hltDoubleJetsC100"),
              denJetMatch = cms.string("hltDoubleJetsC100"),
              probeCut = cms.string("Btag"),

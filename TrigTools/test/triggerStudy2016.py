@@ -26,22 +26,28 @@ options.parseArguments()
 # set up process
 process = cms.Process("TriggerStudy")
 
-if not options.globalTag:
-    print "ERROR : specify globalTag"
-    print "\t eg: for MC16 we have used test 94X_mcRun2_asymptotic_v3"
-    print "\t get this from the dataset name"
-    print "\t exiting..."
-    import sys
-    sys.exit(-1)
     
+#
+#  Get the global Tag
+#
+if options.isMC:
+    globalTag = "94X_mcRun2_asymptotic_v3"
+else:
+    globalTag = "80X_dataRun2_2016LegacyRepro_v4"
+
+if not options.globalTag is None:
+    print "Overidding global tag with",options.globalTag
+    globalTag = options.globalTag
+
 
 #
 # Setup L1
 #
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
-print "globalTag is ",options.globalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, str(options.globalTag), '')
+print "globalTag is ",globalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, str(globalTag), '')
+
     
 
 #
@@ -52,14 +58,15 @@ process.GlobalTag = GlobalTag(process.GlobalTag, str(options.globalTag), '')
 #                            fileNames = cms.untracked.vstring("/store/mc/RunIIAutumn18MiniAOD/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/90000/8D07021F-FD00-D442-B0E6-9077266B320B.root")
                             #)
 
+if options.isMC:
+    from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIISummer16MiniAODv3_MINIAODSIM import ZH_HToBB_ZToBB_source
+    process.source = ZH_HToBB_ZToBB_source
+else:
+    process.source = cms.Source("PoolSource",
+                                fileNames = cms.untracked.vstring("/store/data/Run2016G/JetHT/MINIAOD/07Aug17-v1/110000/D2542926-547E-E711-876A-484D7E8DF0D3.root")
+                                #fileNames = cms.untracked.vstring("/store/data/Run2016G/JetHT/MINIAOD/07Aug17-v1/110000/041CA316-887D-E711-8C62-008CFA197D10.root")
+    )
 
-from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIISummer16MiniAODv3_MINIAODSIM import ZH_HToBB_ZToBB_source
-process.source = ZH_HToBB_ZToBB_source
-
-
-#process.source = cms.Source("PoolSource",
-#                              fileNames = cms.untracked.vstring("/store/data/Run2018D/JetHT/MINIAOD/PromptReco-v2/000/320/500/00000/048048EB-EA95-E811-9A1D-FA163ECE26BB.root")
-#)
 process.TFileService = cms.Service("TFileService", fileName = cms.string (options.outputFile))
 
 
@@ -151,6 +158,9 @@ for h in hltSeeds:
 
             fullName = "triggerStudy_4j_3b_"+hltName+l1Name+offName
 
+            if not options.isMC:
+                triggerStudyConfigured.trigObjs = cms.InputTag("selectedPatTrigger")
+
             setattr(process,fullName,triggerStudyConfigured)
             process.p *= getattr(process,fullName)
 
@@ -169,6 +179,8 @@ for h in hltSeeds:
             triggerStudyConfigured.filtersToPass = filtersToPass
             triggerStudyConfigured.offlinePreSelection = offPreSelection
             triggerStudyConfigured.hltPreSelection = hltPreSelection
+            if not options.isMC:
+                triggerStudyConfigured.trigObjs = cms.InputTag("selectedPatTrigger")
 
             fullName = "triggerStudy_2b100_"+hltName+l1Name+offName
 
@@ -190,6 +202,8 @@ for h in hltSeeds:
             triggerStudyConfigured.filtersToPass = filtersToPass
             triggerStudyConfigured.offlinePreSelection = offPreSelection
             triggerStudyConfigured.hltPreSelection = hltPreSelection
+            if not options.isMC:
+                triggerStudyConfigured.trigObjs = cms.InputTag("selectedPatTrigger")
 
             fullName = "triggerStudy_2j_2j_3b_"+hltName+l1Name+offName
 
@@ -201,28 +215,30 @@ for h in hltSeeds:
 
 
 
-####
-####  Trigger Emulation
-####
-###from CMSSWTools.TrigTools.TriggerEmulation2018 import triggerEmulation
-###
-###triggerEmulation.isMC = cms.bool(options.isMC)
-###triggerEmulation.isBBMC = cms.bool(options.isMC)
-###
-###
-###for o in offlinePreSelection:
-###
-###    offName = o[0]
-###    offPreSelection = o[1]
-###
-###
-###    triggerEmulationConfigured = triggerEmulation.clone()
-###    triggerEmulationConfigured.offlinePreSelection = offPreSelection
-###
-###    fullName = "triggerEmulation"+offName
-###
-###    setattr(process,fullName,triggerEmulationConfigured)
-###    process.p *= getattr(process,fullName)
+#
+#  Trigger Emulation
+#
+from CMSSWTools.TrigTools.TriggerEmulation2016 import triggerEmulation
+
+triggerEmulation.isMC = cms.bool(options.isMC)
+triggerEmulation.isBBMC = cms.bool(options.isMC)
+
+
+for o in offlinePreSelection:
+
+    offName = o[0]
+    offPreSelection = o[1]
+
+
+    triggerEmulationConfigured = triggerEmulation.clone()
+    triggerEmulationConfigured.offlinePreSelection = offPreSelection
+    if not options.isMC:
+        triggerEmulationConfigured.trigObjs = cms.InputTag("selectedPatTrigger")
+
+    fullName = "triggerEmulation"+offName
+
+    setattr(process,fullName,triggerEmulationConfigured)
+    process.p *= getattr(process,fullName)
 
 
 #
@@ -240,6 +256,8 @@ for o in offlinePreSelection:
 
     triggerCombStudyConfigured = triggerCombStudy.clone()
     triggerCombStudyConfigured.offlinePreSelection = offPreSelection
+    if not options.isMC:
+        triggerCombStudyConfigured.trigObjs = cms.InputTag("selectedPatTrigger")
 
     fullName = "triggerCombStudy"+offName
 

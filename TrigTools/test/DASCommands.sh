@@ -1,4 +1,10 @@
 #
+#  2018
+#
+
+dasgoclient -query="file dataset=/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15_ext1-v1/MINIAODSIM"
+
+#
 # 2017
 #
 

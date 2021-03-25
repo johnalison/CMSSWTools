@@ -26,23 +26,28 @@ options.parseArguments()
 # set up process
 process = cms.Process("TriggerStudy")
 
-if not options.globalTag:
-    print "ERROR : specify globalTag"
-    print "\t eg: for MC we have used 'globalTag=102X_upgrade2018_realistic_v20' in the past. "
-    print "\t eg: for Data we have used 'globalTag=102X_upgrade2018_realistic_v21' in the past. "
-    print "\t get this from the dataset name"
-    print "\t exiting..."
-    import sys
-    sys.exit(-1)
-    
+#
+#  Get the global Tag
+#
+if options.isMC:
+    globalTag = "102X_upgrade2018_realistic_v20"
+else:
+    #globalTag = "102X_upgrade2018_realistic_v21"
+    globalTag = "106X_dataRun2_v24"
+
+if not options.globalTag is None:
+    print "Overidding global tag with",options.globalTag
+    globalTag = options.globalTag
+
+
 
 #
 # Setup L1
 #
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
-print "globalTag is ",options.globalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, str(options.globalTag), '')
+print "globalTag is ",globalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, str(globalTag), '')
     
 
 #
@@ -52,16 +57,18 @@ process.GlobalTag = GlobalTag(process.GlobalTag, str(options.globalTag), '')
 #process.source = cms.Source("PoolSource",
 #                            fileNames = cms.untracked.vstring("/store/mc/RunIIAutumn18MiniAOD/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/90000/8D07021F-FD00-D442-B0E6-9077266B320B.root")
                             #)
+if options.isMC:
+    from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIIAutumn18MiniAOD_MINIAODSIM import ZH_HToBB_ZToBB_source
+    process.source = ZH_HToBB_ZToBB_source
+    
+    # from CMSSWTools.TrigTools.ZZTo4bQ01j_5f_TuneCP5_amcatNLO_FXFX_pythia8_RunIIAutumn18MiniAOD_102X_upgrade2018_realistic_v15_ext2_v1 import ZZTo4b_source
+    # process.source = ZZTo4b_source
 
-from CMSSWTools.TrigTools.ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8_RunIIAutumn18MiniAOD_MINIAODSIM import ZH_HToBB_ZToBB_source
-process.source = ZH_HToBB_ZToBB_source
-
-#from CMSSWTools.TrigTools.ZZTo4bQ01j_5f_TuneCP5_amcatNLO_FXFX_pythia8_RunIIAutumn18MiniAOD_102X_upgrade2018_realistic_v15_ext2_v1 import ZZTo4b_source
-#process.source = ZZTo4b_source
-
-#process.source = cms.Source("PoolSource",
-#                              fileNames = cms.untracked.vstring("/store/data/Run2018D/JetHT/MINIAOD/PromptReco-v2/000/320/500/00000/048048EB-EA95-E811-9A1D-FA163ECE26BB.root")
-#)
+else:
+    process.source = cms.Source("PoolSource",
+                                #fileNames = cms.untracked.vstring("/store/data/Run2018D/JetHT/MINIAOD/PromptReco-v2/000/320/500/00000/048048EB-EA95-E811-9A1D-FA163ECE26BB.root")
+                                fileNames = cms.untracked.vstring("/store/data/Run2018D/JetHT/MINIAOD/12Nov2019_UL2018_rsb-v1/20000/099EA918-22F5-2647-9E2F-4E8C89885344.root")
+                                )
 process.TFileService = cms.Service("TFileService", fileName = cms.string (options.outputFile))
 
 
