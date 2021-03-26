@@ -28,7 +28,7 @@ echo python submit_all.py \
 #
 echo "!!!! WARNING: Submitting for Data 2017!!!!"
 echo python submit_all.py \
-  triggerStudy.py \
+  triggerStudy2017.py \
   -f dataSets/data2017.txt \
   -s T3_US_FNALLPC \
   -p outputFile=hist_Data_2017.root isMC=False globalTag=94X_dataRun2_ReReco_EOY17_v2 \

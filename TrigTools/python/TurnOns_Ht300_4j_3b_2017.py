@@ -175,10 +175,10 @@ triggerConfig_Ht300_4j_3b = cms.VPSet(
              mult = cms.uint32(4),
              pt = cms.double(-1.0)),
 
-    cms.PSet(filterName = cms.string("hltCaloQuadJet30HT300"), # Calo Ht > 320"),
+    cms.PSet(filterName = cms.string("hltCaloQuadJet30HT300"), 
              histName = cms.string("CaloHt300"),
              mult = cms.uint32(1),
-             pt = cms.double(320)),
+             pt = cms.double(300)),
 
     cms.PSet(filterName = cms.string("hltBTagCaloCSVp05Double"), 
              histName = cms.string("2CaloBTags"),

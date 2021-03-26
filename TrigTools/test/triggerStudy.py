@@ -33,8 +33,8 @@ if options.isMC:
     globalTag = "102X_upgrade2018_realistic_v20"
 else:
     #globalTag = "102X_upgrade2018_realistic_v21"
-    globalTag = "106X_dataRun2_v24"
-
+    #globalTag = "106X_dataRun2_v24"
+    globalTag = "102X_dataRun2_Prompt_v6"
 if not options.globalTag is None:
     print "Overidding global tag with",options.globalTag
     globalTag = options.globalTag

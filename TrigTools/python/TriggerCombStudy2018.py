@@ -60,6 +60,11 @@ triggersToStudy = cms.VPSet(
              requireOR=cms.VPSet(HLT_Ht330_4j_3b)
          ),
 
+    cms.PSet(name=cms.string("2b100_all"),
+             requireOR=cms.VPSet(HLT_2j116_dEta1p6_2b)
+         ),
+
+
     cms.PSet(name=cms.string("2j116_dEta1p6_2b"),
              requireOR=cms.VPSet(HLT_2j116_dEta1p6_2b),
              vetoOR=cms.VPSet(HLT_Ht330_4j_3b),

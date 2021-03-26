@@ -763,13 +763,13 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   
   float hT = 0;
   float hT30 = 0;
-  for(auto& jet : *jetsHandle){
+  for(const pat::Jet& jet : *jetsHandle){
     double eta = jet.eta();
     double pt = jet.pt();    
     double phi = jet.phi();    
     double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
-
-
+    //cout << jet.neutralHadronEnergyFraction() << endl;
+    //cout << jet.userFloat("pileupJetId:fullDiscriminant")<< endl;;
     //cout << "Reco Jet  " << pt << " " << eta << " " << jet.phi() << " " << deepFlavour << endl;
     if(fabs(eta) > 2.5) continue;
     
