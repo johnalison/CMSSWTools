@@ -40,6 +40,7 @@ using std::cout; using std::endl;
 using std::string; using std::vector;
 typedef std::array<float, 4> JetInfo;
 
+using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using TriggerEmulator::bTagTurnOn;
 
 //little helper function to get handles easier
 //note the use of annoymous namespace to avoid linking conflicts
@@ -472,17 +473,17 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
     if(year_ == "2018"){
       trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year_);
 
-      trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {"L1ORAll_Ht330_4j_3b"});
-      trigEmulatorDetails->AddTrig("EMU_CaloHt320",  {"L1ORAll_Ht330_4j_3b","CaloHt320"});
+      trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_Ht330_4j_3b});
+      trigEmulatorDetails->AddTrig("EMU_CaloHt320",  {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320});
 
-      trigEmulatorDetails->AddTrig("EMU_4PF30",      {"L1ORAll_Ht330_4j_3b","CaloHt320"}, {"PF30DenMatch"},{4});
-      trigEmulatorDetails->AddTrig("EMU_1PF75",      {"L1ORAll_Ht330_4j_3b","CaloHt320"}, {"PF30DenMatch","PF75DenMatch"},{4,1});
-      trigEmulatorDetails->AddTrig("EMU_2PF60",      {"L1ORAll_Ht330_4j_3b","CaloHt320"}, {"PF30DenMatch","PF75DenMatch","PF60DenMatch"},{4,1,2});
-      trigEmulatorDetails->AddTrig("EMU_3PF45",      {"L1ORAll_Ht330_4j_3b","CaloHt320"}, {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch"},{4,1,2,3});
-      trigEmulatorDetails->AddTrig("EMU_4PF40",      {"L1ORAll_Ht330_4j_3b","CaloHt320"}, {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4});
+      trigEmulatorDetails->AddTrig("EMU_4PF30",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch},{4});
+      trigEmulatorDetails->AddTrig("EMU_1PF75",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch},{4,1});
+      trigEmulatorDetails->AddTrig("EMU_2PF60",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch},{4,1,2});
+      trigEmulatorDetails->AddTrig("EMU_3PF45",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch},{4,1,2,3});
+      trigEmulatorDetails->AddTrig("EMU_4PF40",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
     
-      trigEmulatorDetails->AddTrig("EMU_PFHt330",       {"L1ORAll_Ht330_4j_3b","CaloHt320","PFHt330"},     {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4});
-      trigEmulatorDetails->AddTrig("EMU_HT330_4j_3b",   {"L1ORAll_Ht330_4j_3b","CaloHt320","PFHt330"},     {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4},{"PFDeepCSVMatchBtagDenMatch"},{3});
+      trigEmulatorDetails->AddTrig("EMU_PFHt330",       {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
+      trigEmulatorDetails->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
 
       //trigEmulatorDetails->AddTrig("EMU_2b116_L1ORAll",   {}, {"L1112TandPDenMatch"}, {2});
       //trigEmulatorDetails->AddTrig("EMU_2b116_2Calo100",  {}, {"L1112TandPDenMatch","Calo100DenMatch"}, {2, 2});
@@ -490,54 +491,54 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
       //trigEmulatorDetails->AddTrig("EMU_2b116_2PF116",    {}, {"L1112TandPDenMatch","PF116DenMatch"}, {2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
       //trigEmulatorDetails->AddTrig("EMU_2b116",           {}, {"L1112TandPDenMatch","PF116DenMatch","PF116DrDenMatch"}, {2, 2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
 
-      trigEmulatorDetails->AddTrig("EMU_2b116_L1ORAll",   {"L1ORAll_2b116"}  );
-      trigEmulatorDetails->AddTrig("EMU_2b116_2Calo100",  {"L1ORAll_2b116"}, {"Calo100DenMatch"}, {2});
-      trigEmulatorDetails->AddTrig("EMU_2b116_2CaloBTags",{"L1ORAll_2b116"}, {}, {},                    {"CaloDeepCSV0p7MatchBtag"},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b116_2PF116",    {"L1ORAll_2b116"}, {"PF116DenMatch"}, {2}, {"CaloDeepCSV0p7MatchBtag"},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b116",           {"L1ORAll_2b116"}, {"PF116DenMatch","PF116DrDenMatch"}, {2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
+      trigEmulatorDetails->AddTrig("EMU_2b116_L1ORAll",   {hTTurnOn::L1ORAll_2b116}  );
+      trigEmulatorDetails->AddTrig("EMU_2b116_2Calo100",  {hTTurnOn::L1ORAll_2b116}, {jetTurnOn::Calo100DenMatch}, {2});
+      trigEmulatorDetails->AddTrig("EMU_2b116_2CaloBTags",{hTTurnOn::L1ORAll_2b116}, {}, {},                    {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+      trigEmulatorDetails->AddTrig("EMU_2b116_2PF116",    {hTTurnOn::L1ORAll_2b116}, {jetTurnOn::PF116DenMatch}, {2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+      trigEmulatorDetails->AddTrig("EMU_2b116",           {hTTurnOn::L1ORAll_2b116}, {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
 
 
 
       trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year_);
-      trigEmulator->AddTrig("EMU_HT330_4j_3b",   {"L1ORAll_Ht330_4j_3b","CaloHt320","PFHt330"},     {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4},{"PFDeepCSVMatchBtagDenMatch"},{3});
-      //trigEmulator->AddTrig("EMU_2b116",    {},  {"L1112TandPDenMatch","PF116DenMatch","PF116DrDenMatch"}, {2, 2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
-      trigEmulator->AddTrig("EMU_2b116",    {"L1ORAll_2b116"},  {"PF116DenMatch","PF116DrDenMatch"}, {2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
+      trigEmulator->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
+      //trigEmulator->AddTrig("EMU_2b116",    {},  {"L1112TandPDenMatch",jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+      trigEmulator->AddTrig("EMU_2b116",    {hTTurnOn::L1ORAll_2b116},  {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
     }
 
     if(year_ == "2017"){
 
       trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year_);
 
-      trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {"L1ORAll_Ht300_4j_3b"});
-      trigEmulatorDetails->AddTrig("EMU_CaloHt300",  {"L1ORAll_Ht300_4j_3b","CaloHt300"});
+      trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_Ht300_4j_3b});
+      trigEmulatorDetails->AddTrig("EMU_CaloHt300",  {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300});
 
-      trigEmulatorDetails->AddTrig("EMU_4PF30",      {"L1ORAll_Ht300_4j_3b","CaloHt300"}, {"PF30DenMatch"},{4});
-      trigEmulatorDetails->AddTrig("EMU_1PF75",      {"L1ORAll_Ht300_4j_3b","CaloHt300"}, {"PF30DenMatch","PF75DenMatch"},{4,1});
-      trigEmulatorDetails->AddTrig("EMU_2PF60",      {"L1ORAll_Ht300_4j_3b","CaloHt300"}, {"PF30DenMatch","PF75DenMatch","PF60DenMatch"},{4,1,2});
-      trigEmulatorDetails->AddTrig("EMU_3PF45",      {"L1ORAll_Ht300_4j_3b","CaloHt300"}, {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch"},{4,1,2,3});
-      trigEmulatorDetails->AddTrig("EMU_4PF40",      {"L1ORAll_Ht300_4j_3b","CaloHt300"}, {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4});
+      trigEmulatorDetails->AddTrig("EMU_4PF30",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch},{4});
+      trigEmulatorDetails->AddTrig("EMU_1PF75",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch},{4,1});
+      trigEmulatorDetails->AddTrig("EMU_2PF60",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch},{4,1,2});
+      trigEmulatorDetails->AddTrig("EMU_3PF45",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch},{4,1,2,3});
+      trigEmulatorDetails->AddTrig("EMU_4PF40",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
     
-      trigEmulatorDetails->AddTrig("EMU_PFHt300",       {"L1ORAll_Ht300_4j_3b","CaloHt300","PFHt300"},     {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4});
-      trigEmulatorDetails->AddTrig("EMU_HT300_4j_3b",   {"L1ORAll_Ht300_4j_3b","CaloHt300","PFHt300"},     {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4},{"PFDeepCSVMatchBtagDenMatch"},{3});
+      trigEmulatorDetails->AddTrig("EMU_PFHt300",       {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
+      trigEmulatorDetails->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
       
       //trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {}, {"L1100TandP"}, {2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {}, {"L1100TandP","Calo100DenMatch"}, {2, 2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{}, {"L1100TandP"}, {2},                    {"CaloDeepCSV0p7MatchBtag"},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {}, {"L1100TandP","PF100DenMatch"}, {2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100",           {}, {"L1100TandP","PF100DenMatch","PF100DrDenMatch"}, {2, 2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
+      //trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {}, {"L1100TandP",jetTurnOn::Calo100DenMatch}, {2, 2});
+      //trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{}, {"L1100TandP"}, {2},                    {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+      //trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {}, {"L1100TandP","PF100DenMatch"}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+      //trigEmulatorDetails->AddTrig("EMU_2b100",           {}, {"L1100TandP","PF100DenMatch","PF100DrDenMatch"}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
 
-      trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {"L1ORAll_2b100"});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {"L1ORAll_2b100"}, {"Calo100DenMatch"}, {2});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{"L1ORAll_2b100"}, {}, {},                    {"CaloDeepCSV0p7MatchBtag"},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {"L1ORAll_2b100"}, {"PF100DenMatch"}, { 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b100",           {"L1ORAll_2b100"}, {"PF100DenMatch","PF100DrDenMatch"}, {2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
+      trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {hTTurnOn::L1ORAll_2b100});
+      trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::Calo100DenMatch}, {2});
+      trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{hTTurnOn::L1ORAll_2b100}, {}, {},                    {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+      trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch}, { 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+      trigEmulatorDetails->AddTrig("EMU_2b100",           {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
 
 
 
       trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year_);
-      trigEmulator->AddTrig("EMU_HT300_4j_3b",   {"L1ORAll_Ht300_4j_3b","CaloHt300","PFHt300"},     {"PF30DenMatch","PF75DenMatch","PF60DenMatch","PF45DenMatch","PF40DenMatch"},{4,1,2,3,4},{"PFDeepCSVMatchBtagDenMatch"},{3});
-      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandP","PF100DenMatch","PF100DrDenMatch"}, {2, 2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
-      trigEmulator->AddTrig("EMU_2b100",    {"L1ORAll_2b100"},  {"PF100DenMatch","PF100DrDenMatch"}, {2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
+      trigEmulator->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
+      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandP",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
 
 
     }
@@ -547,37 +548,37 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
 
       trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year_);
 
-      trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {"L1ORAll_4j_3b"});
-      trigEmulatorDetails->AddTrig("EMU_4Calo45",    {"L1ORAll_4j_3b"}, {"Calo45"},{4});
-      trigEmulatorDetails->AddTrig("EMU_3CaloBtags", {"L1ORAll_4j_3b"}, {"Calo45"},{4},{"CaloCSVMatchBtagDenMatch"},{3});
-      trigEmulatorDetails->AddTrig("EMU_4j_3b",      {"L1ORAll_4j_3b"}, {"Calo45","PF45DenMatch"},{4,4},{"CaloCSVMatchBtagDenMatch"},{3});
+      trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_4j_3b});
+      trigEmulatorDetails->AddTrig("EMU_4Calo45",    {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45},{4});
+      trigEmulatorDetails->AddTrig("EMU_3CaloBtags", {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45},{4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+      trigEmulatorDetails->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
     
       //trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {}, {"L1100TandPDenMatch"}, {2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {}, {"L1100TandPDenMatch","Calo100DenMatch"}, {2, 2});
+      //trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {}, {"L1100TandPDenMatch",jetTurnOn::Calo100DenMatch}, {2, 2});
       //trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{}, {"L1100TandPDenMatch"}, {2},                    {"CaloCSV0p84MatchBtag"},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {}, {"L1100TandPDenMatch","PF100DenMatch"}, {2, 2}, {"CaloCSV0p84MatchBtag"},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100",           {}, {"L1100TandPDenMatch","PF100DenMatch","PF100DrDenMatch"}, {2, 2, 2}, {"CaloCSV0p84MatchBtag"},{2});
+      //trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {}, {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch}, {2, 2}, {"CaloCSV0p84MatchBtag"},{2});
+      //trigEmulatorDetails->AddTrig("EMU_2b100",           {}, {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {"CaloCSV0p84MatchBtag"},{2});
 
-      trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {"L1ORAll_2b100"} );
-      trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {"L1ORAll_2b100"}, {"Calo100DenMatch"}, {2});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{"L1ORAll_2b100"}, {}, {},                    {"CaloCSV0p84MatchBtag"},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {"L1ORAll_2b100"}, {"PF100DenMatch"}, {2},    {"CaloCSV0p84MatchBtag"},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b100",           {"L1ORAll_2b100"}, {"PF100DenMatch","PF100DrDenMatch"}, {2, 2}, {"CaloCSV0p84MatchBtag"},{2});
+      trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {hTTurnOn::L1ORAll_2b100} );
+      trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::Calo100DenMatch}, {2});
+      trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{hTTurnOn::L1ORAll_2b100}, {}, {},                    {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+      trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch}, {2},    {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+      trigEmulatorDetails->AddTrig("EMU_2b100",           {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
 
 
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_L1ORAll",       {"L1ORAll_2j_2j_3b"});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_4Calo30",       {"L1ORAll_2j_2j_3b"}, {"Calo30"},{4});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_2Calo90",       {"L1ORAll_2j_2j_3b"}, {"Calo30","Calo90DenMatch"},{4,2});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_3CaloBTags",    {"L1ORAll_2j_2j_3b"}, {"Calo30","Calo90DenMatch"},{4,2},{"CaloCSVMatchBtagDenMatch"},{3});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_4PF30",         {"L1ORAll_2j_2j_3b"}, {"Calo30","Calo90DenMatch","PF30DenMatch"},{4,2,4},{"CaloCSVMatchBtagDenMatch"},{3});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b",               {"L1ORAll_2j_2j_3b"}, {"Calo30","Calo90DenMatch","PF30DenMatch","PF90DenMatch"},{4,2,4,2},{"CaloCSVMatchBtagDenMatch"},{3});
+      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_L1ORAll",       {hTTurnOn::L1ORAll_2j_2j_3b});
+      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_4Calo30",       {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30},{4});
+      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_2Calo90",       {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch},{4,2});
+      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_3CaloBTags",    {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch},{4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_4PF30",         {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch},{4,2,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b",               {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
 
 
       trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year_);
-      trigEmulator->AddTrig("EMU_4j_3b",      {"L1ORAll_4j_3b"}, {"Calo45","PF45DenMatch"},{4,4},{"CaloCSVMatchBtagDenMatch"},{3});
-      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandPDenMatch","PF100DenMatch","PF100DrDenMatch"}, {2, 2, 2}, {"CaloCSV0p84MatchBtag"},{2});
-      trigEmulator->AddTrig("EMU_2b100",    {"L1ORAll_2b100"},  {"PF100DenMatch","PF100DrDenMatch"}, {2, 2}, {"CaloCSV0p84MatchBtag"},{2});
-      trigEmulator->AddTrig("EMU_2j_2j_3b", {"L1ORAll_2j_2j_3b"}, {"Calo30","Calo90DenMatch","PF30DenMatch","PF90DenMatch"},{4,2,4,2},{"CaloCSVMatchBtagDenMatch"},{3});
+      trigEmulator->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+      trigEmulator->AddTrig("EMU_2j_2j_3b", {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
 
     }
 
