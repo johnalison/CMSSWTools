@@ -105,10 +105,10 @@ triggerConfig_4j_3b = cms.VPSet(
 #
 #  L1 Requirements
 #
-triggerConfigL1Unprescaled_L1_4j_3b = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_QuadJetC50", "L1_HTT280"),
-                                                               histName = cms.string("passL1"),
-                                                               mult = cms.uint32(1),
-                                                               pt = cms.double(-1.0))
+triggerConfigL1Unprescaled_L1_4j_3b = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_QuadJetC50", "L1_HTT300"),
+                                                         histName = cms.string("passL1"),
+                                                         mult = cms.uint32(1),
+                                                         pt = cms.double(-1.0))
                                    )
 triggerConfigL1Unprescaled_4j_3b = triggerConfigL1Unprescaled_L1_4j_3b.copy()
 triggerConfigL1Unprescaled_4j_3b.extend(triggerConfig_4j_3b)

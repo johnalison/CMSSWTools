@@ -162,7 +162,7 @@ triggerConfig_2j_2j_3b = cms.VPSet(
 #
 #  L1 Requirements
 #
-triggerConfigL1Unprescaled_L1_2j_2j_3b = cms.VPSet(cms.PSet(L1Name = cms.vstring("L1_HTT280","L1_SingleJet170","L1_DoubleJetC100"),
+triggerConfigL1Unprescaled_L1_2j_2j_3b = cms.VPSet(cms.PSet(L1Name = cms.vstring("L1_HTT300","L1_SingleJet170","L1_DoubleJetC100"),
                                                          histName = cms.string("passL1"),
                                                          mult = cms.uint32(1),
                                                          pt = cms.double(-1.0))
