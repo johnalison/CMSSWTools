@@ -1,0 +1,3 @@
+<library file="*.cc" name="TruthTools">
+  <use   name="CMSSWTools/TruthTools"/>
+</library>

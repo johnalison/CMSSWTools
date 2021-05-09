@@ -31,12 +31,12 @@ triggerCombStudy = cms.EDAnalyzer("TriggerStudy",
 #  OLD
 #
 HLT_4j_3b = cms.PSet(hltPath= cms.string("HLT_QuadJet45_TripleBTagCSV_p087_v"),
-                     L1Paths = cms.vstring("L1_QuadJetC50", "L1_HTT280"),
+                     L1Paths = cms.vstring("L1_QuadJetC50", "L1_HTT300"),
                  )
 
 
 HLT_2j_2j_3b = cms.PSet(hltPath = cms.string("HLT_DoubleJet90_Double30_TripleBTagCSV_p087_v"),
-                        L1Paths = cms.vstring("L1_HTT280","L1_SingleJet170","L1_DoubleJetC100"),
+                        L1Paths = cms.vstring("L1_HTT300","L1_SingleJet170","L1_DoubleJetC100"),
                     )
 
 
