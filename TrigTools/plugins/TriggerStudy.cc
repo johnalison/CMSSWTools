@@ -701,14 +701,14 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   //
   //  Get Truth
   //
-  if(isBBMC_){
+  if(isMC_){
     edm::Handle<edm::View<reco::GenJet> > truthJetsHandle = getHandle(iEvent,truthJetsToken_);
     edm::Handle<edm::View<reco::GenParticle> > truthPartsHandle = getHandle(iEvent,truthPartsToken_);
 
     vector<const reco::GenParticle*> bosons;
     for(const reco::GenParticle& tPart : *truthPartsHandle){
       int pdgId = tPart.pdgId();
-    
+
       bool isBoson = (pdgId == 25 || pdgId == 23);
       bool isBQuark = abs(pdgId) == 5;
 
@@ -726,22 +726,25 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
       //	 << endl;
     }
 
-    if(bosons.size() != 2){
-      cout << "ERROR not 2 bosons ..." << bosons.size() << " ... skipping " << endl;
-      return;
+    if(isBBMC_){
+      if(bosons.size() != 2){
+	cout << "ERROR not 2 bosons ..." << bosons.size() << " ... skipping " << endl;
+	return;
+      }
+    
+      if(bQuarks.size() < 4){
+	cout << "ERROR too few b-quarks ..." << bQuarks.size() << " ... skipping " << endl;
+	return;
+      }
+
+      //const LorentzVector&
+      reco::ParticleState::LorentzVector pB1 = bosons.at(0)->p4();
+      reco::ParticleState::LorentzVector pB2 = bosons.at(1)->p4();
+      reco::ParticleState::LorentzVector pBB = pB1 + pB2;
+      mBB  = pBB.M();
+      pTBB = pBB.Pt();
     }
 
-    if(bQuarks.size() < 4){
-      cout << "ERROR too few b-quarks ..." << bQuarks.size() << " ... skipping " << endl;
-      return;
-    }
-
-    //const LorentzVector&
-    reco::ParticleState::LorentzVector pB1 = bosons.at(0)->p4();
-    reco::ParticleState::LorentzVector pB2 = bosons.at(1)->p4();
-    reco::ParticleState::LorentzVector pBB = pB1 + pB2;
-    mBB  = pBB.M();
-    pTBB = pBB.Pt();
   }
   //cout << " mBB " << mBB  <<endl;
 
@@ -1108,7 +1111,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
 	  if(reqTrueB){
 	    //cout << "Matching to trueB. " << endl;
-	    //cout << " nBQs " << bQ->size() << endl;
+	    //cout << " nBQs " << bQuarks.size() << endl;
 	    for(const reco::GenParticle* bQ :  bQuarks){
 	      double etaTrueB = bQ->p4().eta();
 	      double phiTrueB = bQ->p4().phi();    
@@ -1134,6 +1137,60 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
 
 	}// probeCut
+
+
+
+	//
+	//  Require tag (Matches on the "near side" dR < 0.4)
+	// 
+	if(jetTurnOnInfo.exists("tagCut")){
+
+	  bool passTagCut = false;
+
+	  // Only support away side btagging
+	  string tagName  = jetTurnOnInfo.getParameter<string>("tagCut");	
+	  
+	  bool reqBTag  = (tagName == "Btag");
+	  
+	  bool passBTag  = !reqBTag;
+
+	  if(reqBTag){
+
+	    //cout << " this jet is pt / eta / phi " << pt << " / " << eta << " / " << phi << endl;
+    
+	    // Loop on jets{
+	    for(auto& jetTag : *jetsHandle){
+    
+	      double etaTag = jetTag.eta();
+	      double phiTag = jetTag.phi();    
+    
+	      //cout << " \t tag cand is pt / eta / phi " << jetTag.pt() << " / " << etaTag << " / " << phiTag << endl;
+    	  	  
+	      const float dR2 = reco::deltaR2(eta,phi,etaTag,phiTag);
+	      static const float dR2min = 0.4*0.4;
+    
+	      if(dR2 < dR2min) 
+		continue;
+    
+	      //cout << " \t pass Tag " << endl;
+	      double tagDeepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
+	      if(tagDeepFlavour < 0.6) continue;
+    
+	      passBTag = true;
+	      break;
+	    }
+	  }
+	  
+	  passTagCut = (passBTag);
+
+	  if(!passTagCut){
+	    //cout << "Fail tag"<< endl;
+	    passDenominator = false;
+	  }
+
+
+	}// tagCut
+
 
 
 	if(!passDenominator){
