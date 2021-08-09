@@ -38,7 +38,6 @@
 
 using std::cout; using std::endl;
 using std::string; using std::vector;
-typedef std::array<float, 4> JetInfo;
 
 using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using TriggerEmulator::bTagTurnOn;
 
@@ -54,12 +53,6 @@ namespace{
   }
 }
 
-namespace{
-
-  void addJetInfo(std::vector<JetInfo>& jetInfo, float pt, float eta, float phi, float deepFlavour ){
-    jetInfo.push_back(JetInfo{ {pt, eta, phi, deepFlavour} });
-  }
-}
 
 
 
@@ -77,20 +70,20 @@ namespace{
     return matchedObjs;
   }
 
-  void printAllFilters(const float eta,const float phi,const vector<pat::TriggerObjectStandAlone>& trigObjs,const float maxDeltaR=0.1)
-  {
-    const auto matchedObjs = getMatchedObjs(eta,phi,trigObjs,maxDeltaR);
-    for(const auto trigObj : matchedObjs){
-
-      //normally would auto this but to make it clearer for the example
-      const vector<string>& objFilters = trigObj->filterLabels();
-	
-      for(const string& s : objFilters){
-	cout << " \t\t matched Filter is " << s << endl;
-      }
-    }
-    return;
-  }
+  //void printAllFilters(const float eta,const float phi,const vector<pat::TriggerObjectStandAlone>& trigObjs,const float maxDeltaR=0.1)
+  //{
+  //  const auto matchedObjs = getMatchedObjs(eta,phi,trigObjs,maxDeltaR);
+  //  for(const auto trigObj : matchedObjs){
+  //
+  //    //normally would auto this but to make it clearer for the example
+  //    const vector<string>& objFilters = trigObj->filterLabels();
+  //	
+  //    for(const string& s : objFilters){
+  //	cout << " \t\t matched Filter is " << s << endl;
+  //    }
+  //  }
+  //  return;
+  //}
 
 
   /*
@@ -238,8 +231,22 @@ namespace{
   }
 
 
-  
+  //
+  //
+  // 
+  bool passJetID(const pat::Jet* pfjet){
+    
+    double NHF  = pfjet->neutralHadronEnergyFraction();
+    double NEMF = pfjet->neutralEmEnergyFraction();
+    double CHF  = pfjet->chargedHadronEnergyFraction();
+    double MUF  = pfjet->muonEnergyFraction();
+    double CEMF = pfjet->chargedEmEnergyFraction();
+    int    NumConst = pfjet->chargedMultiplicity()+pfjet->neutralMultiplicity();
+    //int    NumNeutralParticles =pfjet->neutralMultiplicity();
+    int    CHM      = pfjet->chargedMultiplicity(); 
+    return (abs(pfjet->eta())<=2.6 && CEMF<0.8 && CHM>0 && CHF>0 && NumConst>1 && NEMF<0.9 && MUF <0.8 && NHF < 0.9 );
 
+  }
 
 
 }//namespace
@@ -294,7 +301,17 @@ private:
     TH1F* h_phi;
     TH1F* h_eta;
     TH1F* h_deepFlavour;
-
+    TH1F* h_deepCSV;
+    TH1F* h_neutralHadronFrac;
+    TH1F* h_neutralEMFrac;
+    TH1F* h_chargedHadronEnergyFraction ;
+    TH1F* h_muonEnergyFraction          ;
+    TH1F* h_chargedEmEnergyFraction     ;
+    TH1F* h_Constituents       ;
+    TH1F* h_neutralMultiplicity;
+    TH1F* h_chargedMultiplicity;
+    TH1F* h_passJetID;
+    TH1F* h_puID;
 
     jetHists(TFileDirectory& jetDir, string cutName ){
       h_pt          = jetDir.make<TH1F>( ("pt"+cutName).c_str()  , "p_{T}", 250,  0., 500. );
@@ -302,22 +319,55 @@ private:
       h_phi         = jetDir.make<TH1F>( ("phi"+cutName).c_str()  , "phi",  100,  -3.2, 3.2 );
       h_eta         = jetDir.make<TH1F>( ("eta"+cutName).c_str()  , "eta",  100,  -4, 4 );
       h_deepFlavour = jetDir.make<TH1F>( ("deepFlavour"+cutName).c_str()  , "deepFlavour",  100,  -0.1, 1.1 );
+      h_deepCSV     = jetDir.make<TH1F>( ("deepCSV"+cutName).c_str()  , "deepCSV",  100,  -0.1, 1.1 );
+      h_neutralHadronFrac = jetDir.make<TH1F>( ("neutralHadronFrac"+cutName).c_str()  , "neutralHadronFrac",  100,  -0.1, 1.1 );
+      h_neutralEMFrac     = jetDir.make<TH1F>( ("neutralEMFrac"+cutName).c_str()  , "neutralEMFrac",  100,  -0.1, 1.1 );
+      h_chargedHadronEnergyFraction  = jetDir.make<TH1F>( ("chargedHadronEnergyFraction"+cutName).c_str()  , "chargedHadronEnergyFraction",  100,  -0.1, 1.1 );
+      h_muonEnergyFraction           = jetDir.make<TH1F>( ("muonEnergyFraction"+cutName).c_str()  , "muonEnergyFraction",  100,  -0.1, 1.1 );
+      h_chargedEmEnergyFraction      = jetDir.make<TH1F>( ("chargedEmEnergyFraction"+cutName).c_str()  , "chargedEmEnergyFraction",  100,  -0.1, 1.1 );
+      h_Constituents      = jetDir.make<TH1F>( ("Constituents"+cutName).c_str()  , "Constituents",  50,  -0.5, 49.5 );
+      h_neutralMultiplicity  = jetDir.make<TH1F>( ("neutralMultiplicity"+cutName).c_str()  , "Constituents",  50,  -0.5, 49.5 );
+      h_chargedMultiplicity  = jetDir.make<TH1F>( ("chargedMultiplicity"+cutName).c_str()  , "Constituents",  50,  -0.5, 49.5 );
+      h_passJetID  = jetDir.make<TH1F>( ("passJetID"+cutName).c_str()  , "passJetID",  2,  -0.5, 1.5 );
+      h_puID      = jetDir.make<TH1F>( ("puID"+cutName).c_str()  , "puID",  100,  -1.1, 1.1 );
+
     }
 
 
 
-    void Fill(double pt, double eta, double phi, double deepFlavour, float weight = 1.0 ){
-      h_pt          ->Fill(pt, weight);
-      h_pt_s        ->Fill(pt, weight);
-      h_phi         ->Fill(phi, weight);
-      h_eta         ->Fill(eta, weight);
+    void Fill(const pat::Jet* jet, float weight = 1.0 ){
+
+      h_pt          ->Fill(jet->pt(), weight);
+      h_pt_s        ->Fill(jet->pt(), weight);
+      h_phi         ->Fill(jet->phi(), weight);
+      h_eta         ->Fill(jet->eta(), weight);
+
+      double deepFlavour = (jet->bDiscriminator("pfDeepFlavourJetTags:probb") + jet->bDiscriminator("pfDeepFlavourJetTags:probbb") + jet->bDiscriminator("pfDeepFlavourJetTags:problepb"));
+      if(deepFlavour < 0) deepFlavour = -0.5;
       h_deepFlavour ->Fill(deepFlavour, weight);
+
+      double deepCSV = (jet->bDiscriminator("pfDeepCSVJetTags:probb") + jet->bDiscriminator("pfDeepCSVJetTags:probbb")); 
+      if(deepCSV < 0) deepCSV = -0.5;
+      h_deepCSV      -> Fill(deepCSV, weight);
+
+      h_neutralHadronFrac           -> Fill(jet->neutralHadronEnergyFraction(), weight);
+      h_neutralEMFrac               -> Fill(jet->neutralEmEnergyFraction(), weight);
+      h_chargedHadronEnergyFraction -> Fill(jet->chargedHadronEnergyFraction(), weight);
+      h_muonEnergyFraction          -> Fill(jet->muonEnergyFraction() , weight);
+      h_chargedEmEnergyFraction     -> Fill(jet->chargedEmEnergyFraction(), weight);
+      
+      h_Constituents         ->Fill(jet->chargedMultiplicity()+jet->neutralMultiplicity(), weight);
+      h_neutralMultiplicity  ->Fill(jet->neutralMultiplicity(), weight);
+      h_chargedMultiplicity  ->Fill(jet->chargedMultiplicity(), weight); 
+
+      h_passJetID         ->Fill(passJetID(jet), weight);
+      h_puID         ->Fill(jet->userFloat("pileupJetId:fullDiscriminant")  , weight);
+
+      //      cout << " " << jet.pt()  << " " << jet.pt()*jet.jecFactor("Uncorrected") <<  " " << jet.userFloat("caloJetMap:pt") << " " << jet.userFloat("pileupJetId:fullDiscriminant")   << " " << jet.userFloat("pileupJetId:fullId") << endl;;
+
     }
 
-    void Fill(JetInfo jInfo, float weight = 1.0 ){
-      Fill(jInfo.at(0), jInfo.at(1), jInfo.at(2), jInfo.at(3), weight);
-    }
-
+    
 
   };
 
@@ -369,7 +419,7 @@ private:
 
     }
 
-    void Fill(double mBB, double pTBB, unsigned int nSelJets, double hT, double hT30, vector<JetInfo> selJets, vector<JetInfo> tagJets, float weight = 1.0 ){
+    void Fill(double mBB, double pTBB, unsigned int nSelJets, double hT, double hT30, vector<const pat::Jet*> selJets, vector<const pat::Jet*> tagJets, float weight = 1.0 ){
       if(h_mBB)  h_mBB      ->Fill(mBB, weight);
       if(h_pTBB) h_pTBB     ->Fill(pTBB, weight);
       h_nSelJets ->Fill(nSelJets, weight);
@@ -377,12 +427,12 @@ private:
       h_hT30     ->Fill(hT30, weight);
       h_hT30_l     ->Fill(hT30, weight);
 
-      for(const JetInfo& jInfo: selJets){
-      	h_selJets->Fill(jInfo, weight);
+      for(const pat::Jet* jet: selJets){
+      	h_selJets->Fill(jet, weight);
       }
 
-      for(const JetInfo& jInfo: tagJets){
-      	h_tagJets->Fill(jInfo, weight);
+      for(const pat::Jet* jet: tagJets){
+      	h_tagJets->Fill(jet, weight);
       }
 
       if(selJets.size() > 0) h_leadJet->Fill(selJets.at(0), weight);
@@ -407,6 +457,13 @@ private:
   //
   vector<jetHists> hJets_num; 
   vector<jetHists> hJets_den; 
+
+  vector<jetHists> hJets_num_pt100; 
+  vector<jetHists> hJets_den_pt100; 
+
+  vector<jetHists> hJets_num_jetID; 
+  vector<jetHists> hJets_den_jetID; 
+
 
   vector<string> L1Names_;
   vector<unsigned int> L1Indices_;  
@@ -604,6 +661,13 @@ void TriggerStudy::beginJob()
     string name = jetTurnOnInfo.getParameter<string>("histName");
     hJets_num.push_back(jetHists(jetDir,"_"+name));
     hJets_den.push_back(jetHists(jetDir,"_"+name+"_den"));
+
+    hJets_num_pt100.push_back(jetHists(jetDir,"_"+name+"_pt100"));
+    hJets_den_pt100.push_back(jetHists(jetDir,"_"+name+"_pt100_den"));
+
+    hJets_num_jetID.push_back(jetHists(jetDir,"_"+name+"_jetID"));
+    hJets_den_jetID.push_back(jetHists(jetDir,"_"+name+"_jetID_den"));
+
   }
 
 
@@ -614,6 +678,8 @@ void TriggerStudy::beginJob()
 
 
 }
+
+
 
 
 void TriggerStudy::beginRun(edm::Run const&, edm::EventSetup const& evSetup){
@@ -761,35 +827,39 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   vector<float> jet_pts;
   vector<float> tagJet_pts;
   
-  vector<JetInfo> sel_JetInfo;
-  vector<JetInfo> tag_JetInfo;
-
+  vector<const pat::Jet*> selJets;
+  vector<const pat::Jet*> tagJets;
   
   float hT = 0;
   float hT30 = 0;
   for(const pat::Jet& jet : *jetsHandle){
-    double eta = jet.eta();
+
     double pt = jet.pt();    
-    double phi = jet.phi();    
-    double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
-    //cout << jet.neutralHadronEnergyFraction() << endl;
-    //cout << jet.userFloat("pileupJetId:fullDiscriminant")<< endl;;
-    //cout << "Reco Jet  " << pt << " " << eta << " " << jet.phi() << " " << deepFlavour << endl;
-    if(fabs(eta) > 2.5) continue;
+
+    if(fabs(jet.eta()) > 2.4) continue;
     
     if(pt<30) continue;
     hT30+=pt;
-    jet_pts.push_back(pt);
-    addJetInfo(sel_JetInfo, pt, eta, phi, deepFlavour);
 
-    if(deepFlavour >= 0.6) {
-      tagJet_pts.push_back(pt);
-      addJetInfo(tag_JetInfo, pt, eta, phi, deepFlavour);
-    }
     
     if(pt < 40) continue;
     ++nSelectedJets;
     hT+=pt;
+
+    cout << " " << jet.pt()  << " " << jet.pt()*jet.jecFactor("Uncorrected") <<  " " << jet.userFloat("caloJetMap:pt") << " " << jet.userFloat("pileupJetId:fullDiscriminant") 
+	 << " " << jet.userFloat("pileupJetIdUpdated:fullDiscriminant") << " " << jet.userFloat("pileupJetIdUpdated:fullId")  
+	 << endl;;
+    //i, j.pt(), , , j.eta(), 
+
+    jet_pts.push_back(pt);
+    selJets.push_back(&jet);
+
+    double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
+    if(deepFlavour >= 0.6) {
+      tagJet_pts.push_back(pt);
+      tagJets.push_back(&jet);
+    }
+
 
     if(deepFlavour < 0.2770) continue;
     ++nTaggedJetsMed;
@@ -797,6 +867,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     if(deepFlavour < 0.6) continue;
     ++nTaggedJets;
   }
+
 
   //
   //  Offline Cuts
@@ -818,7 +889,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   ++NEvents_passOfflinePreSelection;
 
 
-  hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo);
+  hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets);
     
 
   //now we will look at the filters passed
@@ -848,10 +919,10 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
       if(name == "HLT_OR"){
 	float triggerWeight = trigEmulator->GetWeightOR(jet_pts, tagJet_pts, hT30);
-	hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo, triggerWeight);	
+	hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets, triggerWeight);	
       }else{
 	float triggerWeight = trigEmulatorDetails->GetWeight("EMU_"+name);      
-	hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo, triggerWeight);
+	hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets, triggerWeight);
       }
 
       ++filterNum;
@@ -942,7 +1013,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
       if(printFilters) cout << thisFilter << " ";
       if(!thisFilter) break;
     
-      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo);
+      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets);
       ++filterNum;
     }
 
@@ -955,15 +1026,14 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     //
     //  Loop on Jets
     //
-    for(auto& jet : *jetsHandle){
+    for(const pat::Jet& jet : *jetsHandle){
+      
       double eta = jet.eta();
-      double pt  = jet.pt();    
       double phi = jet.phi();    
-      double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
 
       //printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
 
-      if(fabs(eta) > 2.5) continue;
+      if(fabs(eta) > 2.4) continue;
 
       // 
       // Loop on filter reqs
@@ -1161,10 +1231,14 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 	    // Loop on jets{
 	    for(auto& jetTag : *jetsHandle){
     
+	      double ptTag  = jetTag.pt();    
+	      if(ptTag < 30) continue;
+
 	      double etaTag = jetTag.eta();
 	      double phiTag = jetTag.phi();    
+
     
-	      //cout << " \t tag cand is pt / eta / phi " << jetTag.pt() << " / " << etaTag << " / " << phiTag << endl;
+	      //cout << " \t tag cand is pt / eta / phi " << jetTag.pt() << " / " << etaTag << " / " << phiTag << " / " << (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb")) << endl;
     	  	  
 	      const float dR2 = reco::deltaR2(eta,phi,etaTag,phiTag);
 	      static const float dR2min = 0.4*0.4;
@@ -1173,7 +1247,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 		continue;
     
 	      //cout << " \t pass Tag " << endl;
-	      double tagDeepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
+	      double tagDeepFlavour = (jetTag.bDiscriminator("pfDeepFlavourJetTags:probb") + jetTag.bDiscriminator("pfDeepFlavourJetTags:probbb") + jetTag.bDiscriminator("pfDeepFlavourJetTags:problepb"));
 	      if(tagDeepFlavour < 0.6) continue;
     
 	      passBTag = true;
@@ -1200,7 +1274,10 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 	// 
 	// Fill the denominator
 	// 
-	hJets_den.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
+	hJets_den.at(turnOnNum).Fill(&jet);
+	if(jet.pt() > 100) hJets_den_pt100.at(turnOnNum).Fill(&jet);
+	if(passJetID(&jet)) hJets_den_jetID.at(turnOnNum).Fill(&jet);
+	  
 
 	// 
 	// Now the numerator cuts
@@ -1256,7 +1333,10 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 	}
 
 	if(passNumerator){
-	  hJets_num.at(turnOnNum).Fill(pt,eta, phi, deepFlavour);
+	  hJets_num.at(turnOnNum).Fill(&jet);
+	  if(jet.pt() > 100) hJets_num_pt100.at(turnOnNum).Fill(&jet);
+	  if(passJetID(&jet)) hJets_num_jetID.at(turnOnNum).Fill(&jet);
+
 	}
 
       }// Turn Ons
@@ -1392,7 +1472,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     //  If fail requirementss
     // 
     if(passRequired && passVeto){
-      hTrigStudy.at(iTrig).Fill(mBB, pTBB, nSelectedJets, hT, hT30, sel_JetInfo, tag_JetInfo);
+      hTrigStudy.at(iTrig).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets);
     }
     
     ++iTrig;

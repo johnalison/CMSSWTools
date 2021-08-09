@@ -98,6 +98,16 @@ process.maxEvents = cms.untracked.PSet(
 
 
 
+from RecoJets.JetProducers.PileupJetID_cfi import _chsalgos_106X_UL17
+process.pileupJetIdUpdated = process.pileupJetId.clone( 
+        jets=cms.InputTag("slimmedJets"),
+        inputIsCorrected=True,
+        applyJec=False,
+        vertexes=cms.InputTag("offlineSlimmedPrimaryVertices"),
+        algos = cms.VPSet(_chsalgos_106X_UL17),
+    )
+
+
 #HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_CaloDiJet30_v
 #HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_CaloDiJet30_CaloBtagDeepCSV_1p5_v
 #HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_PFBtagDeepCSV_1p5_v
