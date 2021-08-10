@@ -730,6 +730,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
       
   LogDebug ("TrigerStudy") << "  Run/Event/Lumi: " << iEvent.id().run() << " / " << iEvent.id().event() << " / " << iEvent.id().luminosityBlock();
+  //cout << "  Run/Event/Lumi: " << iEvent.id().run() << " / " << iEvent.id().event() << " / " << iEvent.id().luminosityBlock() << endl;
 
   auto trigResultsHandle = getHandle(iEvent,trigResultsToken_) ;
   auto trigObjsHandle = getHandle(iEvent,trigObjsToken_); 
@@ -846,15 +847,21 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     ++nSelectedJets;
     hT+=pt;
 
-    cout << " " << jet.pt()  << " " << jet.pt()*jet.jecFactor("Uncorrected") <<  " " << jet.userFloat("caloJetMap:pt") << " " << jet.userFloat("pileupJetId:fullDiscriminant") 
-	 << " " << jet.userFloat("pileupJetIdUpdated:fullDiscriminant") << " " << jet.userFloat("pileupJetIdUpdated:fullId")  
-	 << endl;;
+    //cout << " " << jet.pt()  << " " << jet.eta() << " " << jet.phi() << " " << jet.pt()*jet.jecFactor("Uncorrected") <<  " " << jet.userFloat("caloJetMap:pt") << " " << jet.userFloat("pileupJetId:fullDiscriminant") 
+//  //	 << " " << jet.userFloat("pileupJetIdUpdated:fullDiscriminant") << " " << jet.userFloat("pileupJetIdUpdated:fullId")  
+    //	 << endl;;
     //i, j.pt(), , , j.eta(), 
 
     jet_pts.push_back(pt);
     selJets.push_back(&jet);
 
     double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
+    //cout << " " << jet.pt()  << " " << jet.eta() << " " << jet.phi() << " " << deepFlavour << " " << jet.pt()*jet.jecFactor("Uncorrected") <<  " " << jet.userFloat("caloJetMap:pt") << " " << jet.userFloat("pileupJetId:fullDiscriminant") 
+    //  //<< " " << jet.userFloat("pileupJetIdUpdated:fullDiscriminant") << " " << jet.userFloat("pileupJetIdUpdated:fullId")  
+    //	 << endl;;
+
+
+
     if(deepFlavour >= 0.6) {
       tagJet_pts.push_back(pt);
       tagJets.push_back(&jet);
