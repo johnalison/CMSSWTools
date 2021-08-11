@@ -34,12 +34,15 @@
 #include <math.h>
 #include <array>
 
+#include "CMSSWTools/TrigTools/interface/TriggerStudy.h"
 
 
 using std::cout; using std::endl;
 using std::string; using std::vector;
 
 using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using TriggerEmulator::bTagTurnOn;
+
+using namespace CMSSWTools;
 
 //little helper function to get handles easier
 //note the use of annoymous namespace to avoid linking conflicts
@@ -230,261 +233,8 @@ namespace{
     return allTrigObjs;
   }
 
-
-  //
-  //
-  // 
-  bool passJetID(const pat::Jet* pfjet){
-    
-    double NHF  = pfjet->neutralHadronEnergyFraction();
-    double NEMF = pfjet->neutralEmEnergyFraction();
-    double CHF  = pfjet->chargedHadronEnergyFraction();
-    double MUF  = pfjet->muonEnergyFraction();
-    double CEMF = pfjet->chargedEmEnergyFraction();
-    int    NumConst = pfjet->chargedMultiplicity()+pfjet->neutralMultiplicity();
-    //int    NumNeutralParticles =pfjet->neutralMultiplicity();
-    int    CHM      = pfjet->chargedMultiplicity(); 
-    return (abs(pfjet->eta())<=2.6 && CEMF<0.8 && CHM>0 && CHF>0 && NumConst>1 && NEMF<0.9 && MUF <0.8 && NHF < 0.9 );
-
-  }
-
-
 }//namespace
 
-
-class TriggerStudy : public edm::EDAnalyzer {
-private:
-
-  edm::InputTag trigObjsTag_;
-  edm::InputTag trigResultsTag_;
-  vector<edm::ParameterSet> filtersToPass_;
-  vector<string> pathsToPass_;
-  vector<string> hltPreSelection_;
-  string year_;
-  edm::ParameterSet offlinePreSelection_;
-  unsigned int minNSelJet_ = 0;
-  unsigned int minNTagMedJet_ = 0;
-  unsigned int minNTagTightJet_ = 0;
-
-  bool isMC_;
-  bool isBBMC_;
-  bool testL1_;
-  bool doEmulation_ = false;
-  vector<edm::ParameterSet> jetTurnOns_;
-  vector<edm::ParameterSet> triggersToPlot_;
-
-  //trigger results stores whether a given path passed or failed
-  //a path is series of filters
-  edm::EDGetTokenT<edm::TriggerResults> trigResultsToken_;
-  //triggers are the objects the trigger is run on, with a list of filters they pass
-  //match to these to see if a given electron/photon/whatever passed a given filter
-  edm::EDGetTokenT<vector<pat::TriggerObjectStandAlone> > trigObjsToken_;
-
-  edm::EDGetTokenT<edm::View<pat::Jet> > jetsToken_;
-  edm::EDGetTokenT<BXVector<l1t::Jet> > L1JetsToken_;
-  edm::EDGetTokenT<BXVector<GlobalAlgBlk> > GlobalAlgToken_;
-  edm::EDGetTokenT<edm::View<reco::GenJet> > truthJetsToken_;
-  edm::EDGetTokenT<edm::View<reco::GenParticle> > truthPartsToken_;
-  edm::Service<TFileService> fs;
-
-
-  // counters
-  unsigned int NEvents_all = 0;
-  unsigned int NEvents_passHLTPreSelection = 0;
-  unsigned int NEvents_passOfflinePreSelection = 0;
-  
-
-  struct jetHists {
-
-    TH1F* h_pt;
-    TH1F* h_pt_s;
-    TH1F* h_phi;
-    TH1F* h_eta;
-    TH1F* h_deepFlavour;
-    TH1F* h_deepCSV;
-    TH1F* h_neutralHadronFrac;
-    TH1F* h_neutralEMFrac;
-    TH1F* h_chargedHadronEnergyFraction ;
-    TH1F* h_muonEnergyFraction          ;
-    TH1F* h_chargedEmEnergyFraction     ;
-    TH1F* h_Constituents       ;
-    TH1F* h_neutralMultiplicity;
-    TH1F* h_chargedMultiplicity;
-    TH1F* h_passJetID;
-    TH1F* h_puID;
-
-    jetHists(TFileDirectory& jetDir, string cutName ){
-      h_pt          = jetDir.make<TH1F>( ("pt"+cutName).c_str()  , "p_{T}", 250,  0., 500. );
-      h_pt_s        = jetDir.make<TH1F>( ("pt_s"+cutName).c_str()  , "p_{T}",200,  0., 100. );
-      h_phi         = jetDir.make<TH1F>( ("phi"+cutName).c_str()  , "phi",  100,  -3.2, 3.2 );
-      h_eta         = jetDir.make<TH1F>( ("eta"+cutName).c_str()  , "eta",  100,  -4, 4 );
-      h_deepFlavour = jetDir.make<TH1F>( ("deepFlavour"+cutName).c_str()  , "deepFlavour",  100,  -0.1, 1.1 );
-      h_deepCSV     = jetDir.make<TH1F>( ("deepCSV"+cutName).c_str()  , "deepCSV",  100,  -0.1, 1.1 );
-      h_neutralHadronFrac = jetDir.make<TH1F>( ("neutralHadronFrac"+cutName).c_str()  , "neutralHadronFrac",  100,  -0.1, 1.1 );
-      h_neutralEMFrac     = jetDir.make<TH1F>( ("neutralEMFrac"+cutName).c_str()  , "neutralEMFrac",  100,  -0.1, 1.1 );
-      h_chargedHadronEnergyFraction  = jetDir.make<TH1F>( ("chargedHadronEnergyFraction"+cutName).c_str()  , "chargedHadronEnergyFraction",  100,  -0.1, 1.1 );
-      h_muonEnergyFraction           = jetDir.make<TH1F>( ("muonEnergyFraction"+cutName).c_str()  , "muonEnergyFraction",  100,  -0.1, 1.1 );
-      h_chargedEmEnergyFraction      = jetDir.make<TH1F>( ("chargedEmEnergyFraction"+cutName).c_str()  , "chargedEmEnergyFraction",  100,  -0.1, 1.1 );
-      h_Constituents      = jetDir.make<TH1F>( ("Constituents"+cutName).c_str()  , "Constituents",  50,  -0.5, 49.5 );
-      h_neutralMultiplicity  = jetDir.make<TH1F>( ("neutralMultiplicity"+cutName).c_str()  , "Constituents",  50,  -0.5, 49.5 );
-      h_chargedMultiplicity  = jetDir.make<TH1F>( ("chargedMultiplicity"+cutName).c_str()  , "Constituents",  50,  -0.5, 49.5 );
-      h_passJetID  = jetDir.make<TH1F>( ("passJetID"+cutName).c_str()  , "passJetID",  2,  -0.5, 1.5 );
-      h_puID      = jetDir.make<TH1F>( ("puID"+cutName).c_str()  , "puID",  100,  -1.1, 1.1 );
-
-    }
-
-
-
-    void Fill(const pat::Jet* jet, float weight = 1.0 ){
-
-      h_pt          ->Fill(jet->pt(), weight);
-      h_pt_s        ->Fill(jet->pt(), weight);
-      h_phi         ->Fill(jet->phi(), weight);
-      h_eta         ->Fill(jet->eta(), weight);
-
-      double deepFlavour = (jet->bDiscriminator("pfDeepFlavourJetTags:probb") + jet->bDiscriminator("pfDeepFlavourJetTags:probbb") + jet->bDiscriminator("pfDeepFlavourJetTags:problepb"));
-      if(deepFlavour < 0) deepFlavour = -0.5;
-      h_deepFlavour ->Fill(deepFlavour, weight);
-
-      double deepCSV = (jet->bDiscriminator("pfDeepCSVJetTags:probb") + jet->bDiscriminator("pfDeepCSVJetTags:probbb")); 
-      if(deepCSV < 0) deepCSV = -0.5;
-      h_deepCSV      -> Fill(deepCSV, weight);
-
-      h_neutralHadronFrac           -> Fill(jet->neutralHadronEnergyFraction(), weight);
-      h_neutralEMFrac               -> Fill(jet->neutralEmEnergyFraction(), weight);
-      h_chargedHadronEnergyFraction -> Fill(jet->chargedHadronEnergyFraction(), weight);
-      h_muonEnergyFraction          -> Fill(jet->muonEnergyFraction() , weight);
-      h_chargedEmEnergyFraction     -> Fill(jet->chargedEmEnergyFraction(), weight);
-      
-      h_Constituents         ->Fill(jet->chargedMultiplicity()+jet->neutralMultiplicity(), weight);
-      h_neutralMultiplicity  ->Fill(jet->neutralMultiplicity(), weight);
-      h_chargedMultiplicity  ->Fill(jet->chargedMultiplicity(), weight); 
-
-      h_passJetID         ->Fill(passJetID(jet), weight);
-      h_puID         ->Fill(jet->userFloat("pileupJetId:fullDiscriminant")  , weight);
-
-      //      cout << " " << jet.pt()  << " " << jet.pt()*jet.jecFactor("Uncorrected") <<  " " << jet.userFloat("caloJetMap:pt") << " " << jet.userFloat("pileupJetId:fullDiscriminant")   << " " << jet.userFloat("pileupJetId:fullId") << endl;;
-
-    }
-
-    
-
-  };
-
-
-  struct eventHists {
-
-    TH1F* h_mBB      = nullptr;
-    TH1F* h_pTBB     = nullptr;
-    TH1F* h_nSelJets = nullptr;
-    TH1F* h_hT       = nullptr;    
-    TH1F* h_hT30     = nullptr;    
-    TH1F* h_hT_s     = nullptr;    
-    TH1F* h_hT30_s   = nullptr;    
-    TH1F* h_hT30_l   = nullptr;    
-
-    jetHists* h_selJets = nullptr;
-    jetHists* h_tagJets = nullptr;
-    jetHists* h_leadJet = nullptr;
-    jetHists* h_sublJet = nullptr;
-    jetHists* h_leadTag = nullptr;
-    jetHists* h_sublTag = nullptr;
-
-
-    eventHists(edm::Service<TFileService>& fs, string cutName, bool isBBMC ){
-      if(isBBMC){
-	h_mBB      = fs->make<TH1F>( ("mBB_"+cutName).c_str()  , "m_{BB}", 100,  0., 1000. );
-	h_pTBB     = fs->make<TH1F>( ("pTBB_"+cutName).c_str()  , "pT_{BB}", 100,  0., 1000. );
-      }
-      h_nSelJets = fs->make<TH1F>( ("nSelJet_"+cutName).c_str()  , "Selected Jet Multiplicity",  16,  -0.5, 15.5 );
-      h_hT       = fs->make<TH1F>( ("hT_"+cutName).c_str()  , "hT",  200,  0, 1000 );
-      h_hT30     = fs->make<TH1F>( ("hT30_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 1000 );
-      h_hT30_l   = fs->make<TH1F>( ("hT30_l_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 2000 );
-      
-
-      TFileDirectory selJetsDir = fs->mkdir( "selJets" );
-      TFileDirectory tagJetsDir = fs->mkdir( "tagJets" );
-      TFileDirectory leadJetDir = fs->mkdir( "leadJet" );
-      TFileDirectory sublJetDir = fs->mkdir( "sublJet" );
-      TFileDirectory leadTagDir = fs->mkdir( "leadTag" );
-      TFileDirectory sublTagDir = fs->mkdir( "sublTag" );
-
-
-      h_selJets = new jetHists(selJetsDir, "_"+cutName);
-      h_tagJets = new jetHists(tagJetsDir, "_"+cutName);
-      h_leadJet = new jetHists(leadJetDir, "_"+cutName);
-      h_sublJet = new jetHists(sublJetDir, "_"+cutName);
-      h_leadTag = new jetHists(leadTagDir, "_"+cutName);
-      h_sublTag = new jetHists(sublTagDir, "_"+cutName);
-
-    }
-
-    void Fill(double mBB, double pTBB, unsigned int nSelJets, double hT, double hT30, vector<const pat::Jet*> selJets, vector<const pat::Jet*> tagJets, float weight = 1.0 ){
-      if(h_mBB)  h_mBB      ->Fill(mBB, weight);
-      if(h_pTBB) h_pTBB     ->Fill(pTBB, weight);
-      h_nSelJets ->Fill(nSelJets, weight);
-      h_hT       ->Fill(hT, weight);
-      h_hT30     ->Fill(hT30, weight);
-      h_hT30_l     ->Fill(hT30, weight);
-
-      for(const pat::Jet* jet: selJets){
-      	h_selJets->Fill(jet, weight);
-      }
-
-      for(const pat::Jet* jet: tagJets){
-      	h_tagJets->Fill(jet, weight);
-      }
-
-      if(selJets.size() > 0) h_leadJet->Fill(selJets.at(0), weight);
-      if(selJets.size() > 1) h_sublJet->Fill(selJets.at(1), weight);
-
-      if(tagJets.size() > 0) h_leadTag->Fill(tagJets.at(0), weight);
-      if(tagJets.size() > 1) h_sublTag->Fill(tagJets.at(1), weight);
-
-    }
-
-  };
-
-
-  //
-  //  Event Hists
-  //
-  vector<eventHists> hAll;
-  vector<eventHists> hTrigStudy;
-
-  //
-  //  Jet Hists
-  //
-  vector<jetHists> hJets_num; 
-  vector<jetHists> hJets_den; 
-
-  vector<jetHists> hJets_num_pt100; 
-  vector<jetHists> hJets_den_pt100; 
-
-  vector<jetHists> hJets_num_jetID; 
-  vector<jetHists> hJets_den_jetID; 
-
-
-  vector<string> L1Names_;
-  vector<unsigned int> L1Indices_;  
-  map<std::string, unsigned int> L1_NamesToPos;
-
-
-  //
-  //  Trigger Emulation
-  //
-  TriggerEmulator::TrigEmulatorTool* trigEmulatorDetails = nullptr;
-  TriggerEmulator::TrigEmulatorTool* trigEmulator = nullptr;
-
-public:
-  explicit TriggerStudy(const edm::ParameterSet& iPara);
-  ~TriggerStudy(){ }
-  void beginJob() override;
-  void beginRun(edm::Run const&, edm::EventSetup const&) override;
-  void endJob() override;
-  void analyze(const edm::Event& iEvent,const edm::EventSetup& iSetup)override;
-
-};
 
 TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
   trigObjsTag_(iPara.getParameter<edm::InputTag>("trigObjs")),
@@ -509,6 +259,10 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
 			       //algInputTag_(iPara.getParameter<edm::InputTag>("AlgInputTag")),
 			       //extInputTag_(iPara.getParameter<edm::InputTag>("ExtInputTag"))
 {
+
+  //
+  // Load the Event Selection
+  //
   if(offlinePreSelection_.exists("minNSelJet"))
      minNSelJet_      = offlinePreSelection_.getParameter<unsigned int>("minNSelJet");
 
@@ -520,126 +274,9 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
   
   edm::LogInfo("TriggerStudy") << " Offline Selection: minNSelJet: " << minNSelJet_ << "  minNTagMedJet: " << minNTagMedJet_ << " minNTagTightJet: " << minNTagTightJet_;
 
-
-
   if(doEmulation_){
-
     year_ = iPara.getParameter<string>("year");
-    cout << "Making Emulator for year" << year_ << endl;
-
-    if(year_ == "2018"){
-      trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year_);
-
-      trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_Ht330_4j_3b});
-      trigEmulatorDetails->AddTrig("EMU_CaloHt320",  {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320});
-
-      trigEmulatorDetails->AddTrig("EMU_4PF30",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch},{4});
-      trigEmulatorDetails->AddTrig("EMU_1PF75",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch},{4,1});
-      trigEmulatorDetails->AddTrig("EMU_2PF60",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch},{4,1,2});
-      trigEmulatorDetails->AddTrig("EMU_3PF45",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch},{4,1,2,3});
-      trigEmulatorDetails->AddTrig("EMU_4PF40",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
-    
-      trigEmulatorDetails->AddTrig("EMU_PFHt330",       {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
-      trigEmulatorDetails->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-
-      //trigEmulatorDetails->AddTrig("EMU_2b116_L1ORAll",   {}, {"L1112TandPDenMatch"}, {2});
-      //trigEmulatorDetails->AddTrig("EMU_2b116_2Calo100",  {}, {"L1112TandPDenMatch","Calo100DenMatch"}, {2, 2});
-      //trigEmulatorDetails->AddTrig("EMU_2b116_2CaloBTags",{}, {"L1112TandPDenMatch"}, {2},                    {"CaloDeepCSV0p7MatchBtag"},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b116_2PF116",    {}, {"L1112TandPDenMatch","PF116DenMatch"}, {2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b116",           {}, {"L1112TandPDenMatch","PF116DenMatch","PF116DrDenMatch"}, {2, 2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
-
-      trigEmulatorDetails->AddTrig("EMU_2b116_L1ORAll",   {hTTurnOn::L1ORAll_2b116}  );
-      trigEmulatorDetails->AddTrig("EMU_2b116_2Calo100",  {hTTurnOn::L1ORAll_2b116}, {jetTurnOn::Calo100DenMatch}, {2});
-      trigEmulatorDetails->AddTrig("EMU_2b116_2CaloBTags",{hTTurnOn::L1ORAll_2b116}, {}, {},                    {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b116_2PF116",    {hTTurnOn::L1ORAll_2b116}, {jetTurnOn::PF116DenMatch}, {2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b116",           {hTTurnOn::L1ORAll_2b116}, {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-
-
-
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year_);
-      trigEmulator->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-      //trigEmulator->AddTrig("EMU_2b116",    {},  {"L1112TandPDenMatch",jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2b116",    {hTTurnOn::L1ORAll_2b116},  {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-    }
-
-    if(year_ == "2017"){
-
-      trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year_);
-
-      trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_Ht300_4j_3b});
-      trigEmulatorDetails->AddTrig("EMU_CaloHt300",  {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300});
-
-      trigEmulatorDetails->AddTrig("EMU_4PF30",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch},{4});
-      trigEmulatorDetails->AddTrig("EMU_1PF75",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch},{4,1});
-      trigEmulatorDetails->AddTrig("EMU_2PF60",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch},{4,1,2});
-      trigEmulatorDetails->AddTrig("EMU_3PF45",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch},{4,1,2,3});
-      trigEmulatorDetails->AddTrig("EMU_4PF40",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
-    
-      trigEmulatorDetails->AddTrig("EMU_PFHt300",       {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
-      trigEmulatorDetails->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-      
-      //trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {}, {"L1100TandP"}, {2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {}, {"L1100TandP",jetTurnOn::Calo100DenMatch}, {2, 2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{}, {"L1100TandP"}, {2},                    {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {}, {"L1100TandP","PF100DenMatch"}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100",           {}, {"L1100TandP","PF100DenMatch","PF100DrDenMatch"}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-
-      trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {hTTurnOn::L1ORAll_2b100});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::Calo100DenMatch}, {2});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{hTTurnOn::L1ORAll_2b100}, {}, {},                    {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch}, { 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b100",           {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-
-
-
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year_);
-      trigEmulator->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandP",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-
-
-    }
-
-
-    if(year_ == "2016"){
-
-      trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year_);
-
-      trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_4j_3b});
-      trigEmulatorDetails->AddTrig("EMU_4Calo45",    {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45},{4});
-      trigEmulatorDetails->AddTrig("EMU_3CaloBtags", {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45},{4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-      trigEmulatorDetails->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-    
-      //trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {}, {"L1100TandPDenMatch"}, {2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {}, {"L1100TandPDenMatch",jetTurnOn::Calo100DenMatch}, {2, 2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{}, {"L1100TandPDenMatch"}, {2},                    {"CaloCSV0p84MatchBtag"},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {}, {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch}, {2, 2}, {"CaloCSV0p84MatchBtag"},{2});
-      //trigEmulatorDetails->AddTrig("EMU_2b100",           {}, {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {"CaloCSV0p84MatchBtag"},{2});
-
-      trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {hTTurnOn::L1ORAll_2b100} );
-      trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::Calo100DenMatch}, {2});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{hTTurnOn::L1ORAll_2b100}, {}, {},                    {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch}, {2},    {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
-      trigEmulatorDetails->AddTrig("EMU_2b100",           {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
-
-
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_L1ORAll",       {hTTurnOn::L1ORAll_2j_2j_3b});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_4Calo30",       {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30},{4});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_2Calo90",       {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch},{4,2});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_3CaloBTags",    {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch},{4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_4PF30",         {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch},{4,2,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-      trigEmulatorDetails->AddTrig("EMU_2j_2j_3b",               {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-
-
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year_);
-      trigEmulator->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2j_2j_3b", {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-
-    }
-
-
+    setupTrigEmulator(year_);
   }
 
 
@@ -669,7 +306,6 @@ void TriggerStudy::beginJob()
     hJets_den_jetID.push_back(jetHists(jetDir,"_"+name+"_jetID_den"));
 
   }
-
 
   for(edm::ParameterSet triggerPath : triggersToPlot_){
     string name = triggerPath.getParameter<string>("name");
@@ -736,7 +372,6 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   auto trigObjsHandle = getHandle(iEvent,trigObjsToken_); 
   edm::Handle<edm::View<pat::Jet> > jetsHandle = getHandle(iEvent,jetsToken_);
 
-
   //
   //  HLT Preselection
   //
@@ -761,37 +396,11 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   ++NEvents_passHLTPreSelection;
   
 
-  float mBB = -1;
-  float pTBB = -1;
-  vector<const reco::GenParticle*> bQuarks;
-
   //
   //  Get Truth
   //
   if(isMC_){
-    edm::Handle<edm::View<reco::GenJet> > truthJetsHandle = getHandle(iEvent,truthJetsToken_);
-    edm::Handle<edm::View<reco::GenParticle> > truthPartsHandle = getHandle(iEvent,truthPartsToken_);
-
-    vector<const reco::GenParticle*> bosons;
-    for(const reco::GenParticle& tPart : *truthPartsHandle){
-      int pdgId = tPart.pdgId();
-
-      bool isBoson = (pdgId == 25 || pdgId == 23);
-      bool isBQuark = abs(pdgId) == 5;
-
-      if(!isBoson and !isBQuark) continue;
-
-      if(!tPart.isLastCopy()) continue;
-
-      if(isBoson)  bosons.push_back(&tPart);
-      if(isBQuark) bQuarks.push_back(&tPart);
-
-      //    cout << "Truth Part " << tPart.pt() << " " << tPart.eta()   << " " << tPart.phi()  << "  pdgID " << tPart.pdgId() << " nDaughters " << tPart.numberOfDaughters() 
-      //	 << " nMothers " << tPart.numberOfMothers()
-      //	 << " status " << tPart.status()
-      //	 << " isLastCopy " << tPart.isLastCopy()
-      //	 << endl;
-    }
+    fillTruthInfo(iEvent);
 
     if(isBBMC_){
       if(bosons.size() != 2){
@@ -811,9 +420,8 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
       mBB  = pBB.M();
       pTBB = pBB.Pt();
     }
-
+    
   }
-  //cout << " mBB " << mBB  <<endl;
 
 
   //
@@ -821,18 +429,11 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   //  
   LogDebug ("TrigerStudy") << "Printing jets " << endl;
 
-  unsigned int nSelectedJets = 0;
-  unsigned int nTaggedJetsMed = 0;
-  unsigned int nTaggedJets = 0;
+  //
+  // Clear Event Data
+  //
+  resetEvent();
 
-  vector<float> jet_pts;
-  vector<float> tagJet_pts;
-  
-  vector<const pat::Jet*> selJets;
-  vector<const pat::Jet*> tagJets;
-  
-  float hT = 0;
-  float hT30 = 0;
   for(const pat::Jet& jet : *jetsHandle){
 
     double pt = jet.pt();    
@@ -841,7 +442,6 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     
     if(pt<30) continue;
     hT30+=pt;
-
     
     if(pt < 40) continue;
     ++nSelectedJets;
@@ -861,18 +461,14 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     //	 << endl;;
 
 
-
-    if(deepFlavour >= 0.6) {
-      tagJet_pts.push_back(pt);
-      tagJets.push_back(&jet);
-    }
-
-
     if(deepFlavour < 0.2770) continue;
     ++nTaggedJetsMed;
 
     if(deepFlavour < 0.6) continue;
     ++nTaggedJets;
+
+    tagJet_pts.push_back(pt);
+    tagJets.push_back(&jet);
   }
 
 
@@ -896,6 +492,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   ++NEvents_passOfflinePreSelection;
 
 
+  // Fill all events
   hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets);
     
 
@@ -916,31 +513,8 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     //
     //  Trigger Emulation
     //
-
-    trigEmulatorDetails->SetWeights  (jet_pts, tagJet_pts, hT30);
-
-
-    unsigned int filterNum = 1; // 0 is All
-    for(edm::ParameterSet filterInfo : filtersToPass_){
-      string name = filterInfo.getParameter<string>("histName");
-
-      if(name == "HLT_OR"){
-	float triggerWeight = trigEmulator->GetWeightOR(jet_pts, tagJet_pts, hT30);
-	hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets, triggerWeight);	
-      }else{
-	float triggerWeight = trigEmulatorDetails->GetWeight("EMU_"+name);      
-	hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets, triggerWeight);
-      }
-
-      ++filterNum;
-    }
-
-
-    //hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30, 1);
-
-    //cout << trigEmulatorDetails->GetWeight("EMU_4PF30") << endl;
-
-
+    doTrigEmulation();
+    
   } else{
     
     
@@ -948,73 +522,19 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     //  Checking the filters
     //
     vector<string> filterNames;
-    vector<bool> filterPassed;
-    for(edm::ParameterSet filterInfo : filtersToPass_){
+    vector<bool>   filterPassed;
+    setEventLevelHLTFilterDecisions(L1word, trigObjsUnpacked, filterNames, filterPassed);
 
-      bool passFilter = true;
-      string name;
-    
-      //
-      //  L1 Selection
-      //
-      if(filterInfo.exists("L1Names")){
-	//cout << "-----" << endl;
-	bool passL1OR = false;
-	vector<string> L1Names = filterInfo.getParameter<vector<string> >("L1Names");      
-	name = filterInfo.getParameter<string>("histName");
-	for(const string& L1N : L1Names){
-    
-	  unsigned int L1Index = L1Indices_.at(L1_NamesToPos[L1N]);
-	  //cout << "Checking name " << L1N << " at position " << L1_NamesToPos[L1N] << " at index  " << L1Index << " passed ... " << bool(L1word[L1Index]) << endl;
-	  if(L1word[L1Index]){
-	    passL1OR = true;
-	  }
-	}
-          
-	if(!passL1OR) passFilter = false;
-      }
-    
-        
-      //
-      //  HLT Selection
-      //
-      if(filterInfo.exists("filterName")){
-	name = filterInfo.getParameter<string>("filterName");
-    
-	unsigned int mult = filterInfo.getParameter<unsigned int>("mult");
-	double pt = filterInfo.getParameter<double>("pt");
-	vector<const pat::TriggerObjectStandAlone*> releventTrigObs = getAllTrigObjs(trigObjsUnpacked, name);
-    
-    
-	if(mult > 0 && releventTrigObs.size() < mult){
-	  //if(releventTrigObs.size() > 0) cout << name << " Fails with size " << releventTrigObs.size() << endl;
-	  passFilter = false;
-	}
-    
-	if(pt   > 0){
-	  bool passPt = false;
-	  for(auto& trigObj : releventTrigObs){
-	    if(trigObj->pt() > pt) passPt = true;
-	  }
-          
-	  if(!passPt) passFilter = false;
-	}
-      } // HLT Selection
-    
-    
-    
-        //filtersPassed.push_back(foundFilter(filter,trigObjsUnpacked));
-      filterNames .push_back(name);
-      filterPassed.push_back(passFilter);
-    }
     
     //
     //  Print Filters fill hists
     //
     bool printFilters = false;
-    
     if(printFilters) cout << " filters Passed: ";
-    
+
+    //
+    //  Event Level Plots for all filters
+    //
     unsigned int filterNum = 1; // 0 is All
     for(bool thisFilter : filterPassed){
       if(printFilters) cout << thisFilter << " ";
@@ -1028,327 +548,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     //
     // Now jet turn ons
     //
-
-
-    //
-    //  Loop on Jets
-    //
-    for(const pat::Jet& jet : *jetsHandle){
-      
-      double eta = jet.eta();
-      double phi = jet.phi();    
-
-      //printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
-
-      if(fabs(eta) > 2.4) continue;
-
-      // 
-      // Loop on filter reqs
-      //
-      unsigned int turnOnNum = -1; 
-      for(edm::ParameterSet jetTurnOnInfo : jetTurnOns_){
-	++turnOnNum;
-
-	//bool printOut = (jetTurnOnInfo.getParameter<string>("numFilterMatch") == "hltL1DoubleJet112er2p3dEtaMax1p6");
-	//printOut = printOut && (jetTurnOnInfo.getParameter<string>("histName") == "L1112TandP");
-
-	//if(printOut){
-	//  
-	//
-	//  vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), "hltL1DoubleJet112er2p3dEtaMax1p6");
-	//  if(itr == filterNames.end()){
-	//    cout << "ERROR not found " << endl;
-	//    continue;
-	//  }
-	//
-	//  unsigned int denIndex = std::distance(filterNames.begin(), itr);
-	//  for(unsigned int iFilt = 0; iFilt < (denIndex+1); ++iFilt){
-	//    if(filterPassed.at(iFilt)){
-	//      cout << "Passed Event" << endl;
-	//    }else{
-	//      printOut = false;
-	//    }
-	//  }
-	//
-	//  vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, "hltL1DoubleJet112er2p3dEtaMax1p6");
-	//  for(auto& trigObj : onlineMatch){
-	//    cout << "\t " << trigObj->pt()  << endl;
-	//    printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
-	//  }
-	//}
-
-
-	//
-	//  Require event filter passed (if requested)
-	//
-	bool passDenominator = true;
-	if(jetTurnOnInfo.exists("denEventFilter")){
-	  string denName  = jetTurnOnInfo.getParameter<string>("denEventFilter");
-
-	  vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), denName);
-	  if(itr == filterNames.end()){
-	    cout << "ERROR denEventFilter " << denName << " not found in filterNames  " << endl;
-	    continue;
-	  }
-
-	  unsigned int denIndex = std::distance(filterNames.begin(), itr);
-	  for(unsigned int iFilt = 0; iFilt < (denIndex+1); ++iFilt){
-	    if(!filterPassed.at(iFilt)){
-	      passDenominator = false;
-	    }
-	  }
-
-	  if(passDenominator && jetTurnOnInfo.exists("denJetMatch") ){
-	    vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, jetTurnOnInfo.getParameter<string>("denJetMatch"));
-	    if(!onlineMatch.size()) passDenominator = false;
-	  }
-		
-	}//denFilter
-      
-	//
-	//  Require tag (Matches on the "away side" dR > 0.4)
-	// 
-	if(jetTurnOnInfo.exists("tagFilterMatch")){
-	  string tagName  = jetTurnOnInfo.getParameter<string>("tagFilterMatch");	
-	  unsigned int    tagMin   = jetTurnOnInfo.getParameter<unsigned int>("tagFilterMin");	
-
-	  // Loop on jets{
-	  unsigned int nTags = 0;
-	  
-	  for(auto& jetTag : *jetsHandle){
-	    double etaTag = jetTag.eta();
-	    double phiTag = jetTag.phi();    
-
-	    //cout << " \t probe cand is pt / eta / phi " << jetProbe.pt() << " / " << etaProbe << " / " << phiProbe << endl;
-	  	  
-	    const float dR2 = reco::deltaR2(eta,phi,etaTag,phiTag);
-	    static const float dR2min = 0.4*0.4;
-
-	    if(dR2 < dR2min) 
-	      continue;
-
-	    if(checkFilter(etaTag,phiTag,trigObjsUnpacked,tagName))
-	      nTags++;
-
-	  }
-	
-	  if(nTags < tagMin){
-	    //cout << "Fail probe"<< endl;
-	    passDenominator = false;
-	  }else{
-	    //cout << "Pass tag " << nTags << endl;
-	  }
-
-
-	}// tagFilterMatch
-
-
-	//
-	//  Require tag (Matches on the "near side" dR < 0.4)
-	// 
-	if(jetTurnOnInfo.exists("probeCut")){
-
-	  bool passProbeCut = false;
-
-	  // Only support near side btagging and truth bcuts 
-	  string probeName  = jetTurnOnInfo.getParameter<string>("probeCut");	
-	  
-	  bool reqBTag  = (probeName == "Btag"  || probeName == "trueBtag");
-	  bool reqTrueB = (probeName == "trueB" || probeName == "trueBtag");
-	  
-	  bool passBTag  = !reqBTag;
-	  bool passTrueB = !reqTrueB;
-
-	  if(reqBTag){
-
-	    //cout << " this jet is pt / eta / phi " << pt << " / " << eta << " / " << phi << endl;
-    
-	    // Loop on jets{
-	    for(auto& jetTag : *jetsHandle){
-    
-	      double etaTag = jetTag.eta();
-	      double phiTag = jetTag.phi();    
-    
-	      //cout << " \t tag cand is pt / eta / phi " << jetTag.pt() << " / " << etaTag << " / " << phiTag << endl;
-    	  	  
-	      const float dR2 = reco::deltaR2(eta,phi,etaTag,phiTag);
-	      static const float dR2min = 0.4*0.4;
-    
-	      if(dR2 > dR2min) 
-		continue;
-    
-	      //cout << " \t pass Tag " << endl;
-	      double tagDeepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
-	      if(tagDeepFlavour < 0.6) continue;
-    
-	      passBTag = true;
-	      break;
-	    }
-	  }
-
-	  if(reqTrueB){
-	    //cout << "Matching to trueB. " << endl;
-	    //cout << " nBQs " << bQuarks.size() << endl;
-	    for(const reco::GenParticle* bQ :  bQuarks){
-	      double etaTrueB = bQ->p4().eta();
-	      double phiTrueB = bQ->p4().phi();    
-	      
-	      const float dR2 = reco::deltaR2(eta,phi,etaTrueB,phiTrueB);
-	      static const float dR2min = 0.4*0.4;
-	      
-	      if(dR2 > dR2min) 
-		continue;
-
-	      passTrueB = true;
-	      break;
-	    }
-
-	  }
-	  
-	  passProbeCut = (passBTag & passTrueB);
-
-	  if(!passProbeCut){
-	    //cout << "Fail tag"<< endl;
-	    passDenominator = false;
-	  }
-
-
-	}// probeCut
-
-
-
-	//
-	//  Require tag (Matches on the "near side" dR < 0.4)
-	// 
-	if(jetTurnOnInfo.exists("tagCut")){
-
-	  bool passTagCut = false;
-
-	  // Only support away side btagging
-	  string tagName  = jetTurnOnInfo.getParameter<string>("tagCut");	
-	  
-	  bool reqBTag  = (tagName == "Btag");
-	  
-	  bool passBTag  = !reqBTag;
-
-	  if(reqBTag){
-
-	    //cout << " this jet is pt / eta / phi " << pt << " / " << eta << " / " << phi << endl;
-    
-	    // Loop on jets{
-	    for(auto& jetTag : *jetsHandle){
-    
-	      double ptTag  = jetTag.pt();    
-	      if(ptTag < 30) continue;
-
-	      double etaTag = jetTag.eta();
-	      double phiTag = jetTag.phi();    
-
-    
-	      //cout << " \t tag cand is pt / eta / phi " << jetTag.pt() << " / " << etaTag << " / " << phiTag << " / " << (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb")) << endl;
-    	  	  
-	      const float dR2 = reco::deltaR2(eta,phi,etaTag,phiTag);
-	      static const float dR2min = 0.4*0.4;
-    
-	      if(dR2 < dR2min) 
-		continue;
-    
-	      //cout << " \t pass Tag " << endl;
-	      double tagDeepFlavour = (jetTag.bDiscriminator("pfDeepFlavourJetTags:probb") + jetTag.bDiscriminator("pfDeepFlavourJetTags:probbb") + jetTag.bDiscriminator("pfDeepFlavourJetTags:problepb"));
-	      if(tagDeepFlavour < 0.6) continue;
-    
-	      passBTag = true;
-	      break;
-	    }
-	  }
-	  
-	  passTagCut = (passBTag);
-
-	  if(!passTagCut){
-	    //cout << "Fail tag"<< endl;
-	    passDenominator = false;
-	  }
-
-
-	}// tagCut
-
-
-
-	if(!passDenominator){
-	  continue;
-	}
-
-	// 
-	// Fill the denominator
-	// 
-	hJets_den.at(turnOnNum).Fill(&jet);
-	if(jet.pt() > 100) hJets_den_pt100.at(turnOnNum).Fill(&jet);
-	if(passJetID(&jet)) hJets_den_jetID.at(turnOnNum).Fill(&jet);
-	  
-
-	// 
-	// Now the numerator cuts
-	// 
-	bool passNumerator = false;
-	if(jetTurnOnInfo.exists("numFilterMatch")){
-	  string numName  = jetTurnOnInfo.getParameter<string>("numFilterMatch");
-
-	  if(checkFilter(eta,phi,trigObjsUnpacked,numName)){
-	    passNumerator = true;
-	  } 
-	}
-
-	//if(printOut && !passNumerator && pt > 300){
-	//
-	//  
-	//  cout << "Failed Numerator pt: " << pt << " " << eta << " " << phi << endl;
-	//  vector<string>::iterator itr = std::find(filterNames.begin(), filterNames.end(), "hltL1DoubleJet112er2p3dEtaMax1p6");
-	//  if(itr == filterNames.end()){
-	//    cout << "ERROR not found " << endl;
-	//    continue;
-	//  }
-	//
-	//  unsigned int denIndex = std::distance(filterNames.begin(), itr);
-	//  for(unsigned int iFilt = 0; iFilt < (denIndex+1); ++iFilt){
-	//    if(filterPassed.at(iFilt)){
-	//      cout << "Passed Event" << endl;
-	//    }
-	//  }
-	//
-	//  printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
-	//  //vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, "hltL1DoubleJet112er2p3dEtaMax1p6");
-	//  //for(auto& trigObj : onlineMatch){
-	//  //  cout << "\t " << trigObj->pt()  << endl;
-	//  //  printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
-	//  //}
-	//  
-	//}
-	
-
-	if(jetTurnOnInfo.exists("numPtCut")){	
-	  string filterMatch  = jetTurnOnInfo.getParameter<string>("numPtName");
-	  double filterPt     = jetTurnOnInfo.getParameter<double>("numPtCut");
-	  vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, filterMatch);
-
-	  //if(onlineMatch.size() > 1)
-	  // cout << " size of filterMatches " << onlineMatch.size() << endl;
-
-	  for(auto& trigObj : onlineMatch){
-	    if(trigObj->pt() >= filterPt) passNumerator = true;
-	  }
-
-	}
-
-	if(passNumerator){
-	  hJets_num.at(turnOnNum).Fill(&jet);
-	  if(jet.pt() > 100) hJets_num_pt100.at(turnOnNum).Fill(&jet);
-	  if(passJetID(&jet)) hJets_num_jetID.at(turnOnNum).Fill(&jet);
-
-	}
-
-      }// Turn Ons
-
-    }// jets
+    fillJetTurnOnPlots(jetsHandle, trigObjsUnpacked, filterNames, filterPassed);
 
 
     //
@@ -1380,7 +580,6 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   //
   unsigned int iTrig = 0;
   for(edm::ParameterSet triggerPath : triggersToPlot_){
-
 
     string name = triggerPath.getParameter<string>("name");
 
@@ -1506,7 +705,563 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
   
   
+}//analyze
+
+
+void TriggerStudy::setupTrigEmulator(std::string year){
+  cout << "Making Emulator for year" << year << endl;
+    
+  if(year == "2018"){
+    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year);
+
+    trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_Ht330_4j_3b});
+    trigEmulatorDetails->AddTrig("EMU_CaloHt320",  {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320});
+
+    trigEmulatorDetails->AddTrig("EMU_4PF30",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch},{4});
+    trigEmulatorDetails->AddTrig("EMU_1PF75",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch},{4,1});
+    trigEmulatorDetails->AddTrig("EMU_2PF60",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch},{4,1,2});
+    trigEmulatorDetails->AddTrig("EMU_3PF45",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch},{4,1,2,3});
+    trigEmulatorDetails->AddTrig("EMU_4PF40",      {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
+    
+    trigEmulatorDetails->AddTrig("EMU_PFHt330",       {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
+    trigEmulatorDetails->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
+
+    //trigEmulatorDetails->AddTrig("EMU_2b116_L1ORAll",   {}, {"L1112TandPDenMatch"}, {2});
+    //trigEmulatorDetails->AddTrig("EMU_2b116_2Calo100",  {}, {"L1112TandPDenMatch","Calo100DenMatch"}, {2, 2});
+    //trigEmulatorDetails->AddTrig("EMU_2b116_2CaloBTags",{}, {"L1112TandPDenMatch"}, {2},                    {"CaloDeepCSV0p7MatchBtag"},{2});
+    //trigEmulatorDetails->AddTrig("EMU_2b116_2PF116",    {}, {"L1112TandPDenMatch","PF116DenMatch"}, {2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
+    //trigEmulatorDetails->AddTrig("EMU_2b116",           {}, {"L1112TandPDenMatch","PF116DenMatch","PF116DrDenMatch"}, {2, 2, 2}, {"CaloDeepCSV0p7MatchBtag"},{2});
+
+    trigEmulatorDetails->AddTrig("EMU_2b116_L1ORAll",   {hTTurnOn::L1ORAll_2b116}  );
+    trigEmulatorDetails->AddTrig("EMU_2b116_2Calo100",  {hTTurnOn::L1ORAll_2b116}, {jetTurnOn::Calo100DenMatch}, {2});
+    trigEmulatorDetails->AddTrig("EMU_2b116_2CaloBTags",{hTTurnOn::L1ORAll_2b116}, {}, {},                    {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+    trigEmulatorDetails->AddTrig("EMU_2b116_2PF116",    {hTTurnOn::L1ORAll_2b116}, {jetTurnOn::PF116DenMatch}, {2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+    trigEmulatorDetails->AddTrig("EMU_2b116",           {hTTurnOn::L1ORAll_2b116}, {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+
+
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year);
+    trigEmulator->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
+    //trigEmulator->AddTrig("EMU_2b116",    {},  {"L1112TandPDenMatch",jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+    trigEmulator->AddTrig("EMU_2b116",    {hTTurnOn::L1ORAll_2b116},  {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+  }
+
+  if(year == "2017"){
+
+    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year);
+
+    trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_Ht300_4j_3b});
+    trigEmulatorDetails->AddTrig("EMU_CaloHt300",  {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300});
+
+    trigEmulatorDetails->AddTrig("EMU_4PF30",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch},{4});
+    trigEmulatorDetails->AddTrig("EMU_1PF75",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch},{4,1});
+    trigEmulatorDetails->AddTrig("EMU_2PF60",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch},{4,1,2});
+    trigEmulatorDetails->AddTrig("EMU_3PF45",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch},{4,1,2,3});
+    trigEmulatorDetails->AddTrig("EMU_4PF40",      {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300}, {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
+    
+    trigEmulatorDetails->AddTrig("EMU_PFHt300",       {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4});
+    trigEmulatorDetails->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
+      
+    //trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {}, {"L1100TandP"}, {2});
+    //trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {}, {"L1100TandP",jetTurnOn::Calo100DenMatch}, {2, 2});
+    //trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{}, {"L1100TandP"}, {2},                    {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+    //trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {}, {"L1100TandP","PF100DenMatch"}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+    //trigEmulatorDetails->AddTrig("EMU_2b100",           {}, {"L1100TandP","PF100DenMatch","PF100DrDenMatch"}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+    trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {hTTurnOn::L1ORAll_2b100});
+    trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::Calo100DenMatch}, {2});
+    trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{hTTurnOn::L1ORAll_2b100}, {}, {},                    {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+    trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch}, { 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+    trigEmulatorDetails->AddTrig("EMU_2b100",           {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+
+
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year);
+    trigEmulator->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
+    //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandP",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+    trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+
+  }
+
+
+  if(year == "2016"){
+
+    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year);
+
+    trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_4j_3b});
+    trigEmulatorDetails->AddTrig("EMU_4Calo45",    {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45},{4});
+    trigEmulatorDetails->AddTrig("EMU_3CaloBtags", {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45},{4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+    trigEmulatorDetails->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+    
+    //trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {}, {"L1100TandPDenMatch"}, {2});
+    //trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {}, {"L1100TandPDenMatch",jetTurnOn::Calo100DenMatch}, {2, 2});
+    //trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{}, {"L1100TandPDenMatch"}, {2},                    {"CaloCSV0p84MatchBtag"},{2});
+    //trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {}, {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch}, {2, 2}, {"CaloCSV0p84MatchBtag"},{2});
+    //trigEmulatorDetails->AddTrig("EMU_2b100",           {}, {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {"CaloCSV0p84MatchBtag"},{2});
+
+    trigEmulatorDetails->AddTrig("EMU_2b100_L1ORAll",   {hTTurnOn::L1ORAll_2b100} );
+    trigEmulatorDetails->AddTrig("EMU_2b100_2Calo100",  {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::Calo100DenMatch}, {2});
+    trigEmulatorDetails->AddTrig("EMU_2b100_2CaloBTags",{hTTurnOn::L1ORAll_2b100}, {}, {},                    {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+    trigEmulatorDetails->AddTrig("EMU_2b100_2PF100",    {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch}, {2},    {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+    trigEmulatorDetails->AddTrig("EMU_2b100",           {hTTurnOn::L1ORAll_2b100}, {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+
+
+    trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_L1ORAll",       {hTTurnOn::L1ORAll_2j_2j_3b});
+    trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_4Calo30",       {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30},{4});
+    trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_2Calo90",       {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch},{4,2});
+    trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_3CaloBTags",    {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch},{4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+    trigEmulatorDetails->AddTrig("EMU_2j_2j_3b_4PF30",         {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch},{4,2,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+    trigEmulatorDetails->AddTrig("EMU_2j_2j_3b",               {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+
+
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year);
+    trigEmulator->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+    //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+    trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+    trigEmulator->AddTrig("EMU_2j_2j_3b", {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+
+  }
+
+}//setupTrigEmulator
+
+void TriggerStudy::fillTruthInfo(const edm::Event& iEvent){
+
+  edm::Handle<edm::View<reco::GenJet> > truthJetsHandle = getHandle(iEvent,truthJetsToken_);
+  edm::Handle<edm::View<reco::GenParticle> > truthPartsHandle = getHandle(iEvent,truthPartsToken_);
+
+  for(const reco::GenParticle& tPart : *truthPartsHandle){
+    int pdgId = tPart.pdgId();
+
+    bool isBoson = (pdgId == 25 || pdgId == 23);
+    bool isBQuark = abs(pdgId) == 5;
+
+    if(!isBoson and !isBQuark) continue;
+
+    if(!tPart.isLastCopy()) continue;
+
+    if(isBoson)  bosons.push_back(&tPart);
+    if(isBQuark) bQuarks.push_back(&tPart);
+
+    //    cout << "Truth Part " << tPart.pt() << " " << tPart.eta()   << " " << tPart.phi()  << "  pdgID " << tPart.pdgId() << " nDaughters " << tPart.numberOfDaughters() 
+    //	 << " nMothers " << tPart.numberOfMothers()
+    //	 << " status " << tPart.status()
+    //	 << " isLastCopy " << tPart.isLastCopy()
+    //	 << endl;
+  }
+
+
+}//fillTruthInfo
+
+void TriggerStudy::doTrigEmulation(){
+
+  trigEmulatorDetails->SetWeights  (jet_pts, tagJet_pts, hT30);
+
+
+  unsigned int filterNum = 1; // 0 is All
+  for(edm::ParameterSet filterInfo : filtersToPass_){
+    string name = filterInfo.getParameter<string>("histName");
+
+    if(name == "HLT_OR"){
+      float triggerWeight = trigEmulator->GetWeightOR(jet_pts, tagJet_pts, hT30);
+      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets, triggerWeight);	
+    }else{
+      float triggerWeight = trigEmulatorDetails->GetWeight("EMU_"+name);      
+      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets, triggerWeight);
+    }
+
+    ++filterNum;
+  }
+
+}//doTrigEmulation
+
+void TriggerStudy::resetEvent(){
+  nSelectedJets = 0;
+  nTaggedJetsMed = 0;
+  nTaggedJets = 0;
+
+  jet_pts .clear();
+  tagJet_pts.clear();
+  
+  selJets.clear();
+  tagJets.clear();
+  
+  hT = 0;
+  hT30 = 0;
 }
+
+
+
+void TriggerStudy::setEventLevelHLTFilterDecisions(const std::vector<bool>& L1word, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, 
+						   vector<string>& filterNames, vector<bool>& filterPassed){
+  for(edm::ParameterSet filterInfo : filtersToPass_){
+
+    bool passFilter = true;
+    string name;
+    
+    //
+    //  L1 Selection
+    //
+    if(filterInfo.exists("L1Names")){
+      //cout << "-----" << endl;
+      bool passL1OR = false;
+      vector<string> L1Names = filterInfo.getParameter<vector<string> >("L1Names");      
+      name = filterInfo.getParameter<string>("histName");
+      for(const string& L1N : L1Names){
+    
+	unsigned int L1Index = L1Indices_.at(L1_NamesToPos[L1N]);
+	//cout << "Checking name " << L1N << " at position " << L1_NamesToPos[L1N] << " at index  " << L1Index << " passed ... " << bool(L1word[L1Index]) << endl;
+	if(L1word[L1Index]){
+	  passL1OR = true;
+	}
+      }
+          
+      if(!passL1OR) passFilter = false;
+    }
+    
+        
+    //
+    //  HLT Selection
+    //
+    if(filterInfo.exists("filterName")){
+      name = filterInfo.getParameter<string>("filterName");
+    
+      unsigned int mult = filterInfo.getParameter<unsigned int>("mult");
+      double pt = filterInfo.getParameter<double>("pt");
+      vector<const pat::TriggerObjectStandAlone*> releventTrigObs = getAllTrigObjs(trigObjsUnpacked, name);
+    
+    
+      if(mult > 0 && releventTrigObs.size() < mult){
+	//if(releventTrigObs.size() > 0) cout << name << " Fails with size " << releventTrigObs.size() << endl;
+	passFilter = false;
+      }
+    
+      if(pt   > 0){
+	bool passPt = false;
+	for(auto& trigObj : releventTrigObs){
+	  if(trigObj->pt() > pt) passPt = true;
+	}
+          
+	if(!passPt) passFilter = false;
+      }
+    } // HLT Selection
+    
+    
+    
+    //filtersPassed.push_back(foundFilter(filter,trigObjsUnpacked));
+    filterNames .push_back(name);
+    filterPassed.push_back(passFilter);
+  }
+}//setEventLevelHLTFilterDecisions
+
+
+
+
+void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked,
+				      const vector<string>& filterNames, const vector<bool>& filterPassed)
+{
+  //
+  //  Loop on Jets
+  //
+  for(const pat::Jet& jet : *jetsHandle){
+      
+    double eta = jet.eta();
+    double phi = jet.phi();    
+
+    //printAllFilters(eta, phi, trigObjsUnpacked, 0.1);
+
+    if(fabs(eta) > 2.4) continue;
+
+    // 
+    // Loop on HLT filters 
+    //
+    unsigned int turnOnNum = -1; 
+    for(edm::ParameterSet jetTurnOnInfo : jetTurnOns_){
+      ++turnOnNum;
+
+      bool passDenominator = true;
+
+      //
+      //  Require event filter passed (if requested)
+      //
+      if(jetTurnOnInfo.exists("denEventFilter")){
+	passDenominator = checkDenEventFilter(jetTurnOnInfo, filterNames, filterPassed);
+      }//denFilter
+
+
+      // 
+      //  Required the den object to be matched to a filter (if requested)
+      //
+      if(jetTurnOnInfo.exists("denJetMatch") ){
+	vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, jetTurnOnInfo.getParameter<string>("denJetMatch"));
+	if(!onlineMatch.size()) passDenominator = false;
+      }
+      
+      //
+      //  Require tag to match a HLT filter (Matches on the "away side" dR > 0.4)
+      // 
+      if(jetTurnOnInfo.exists("tagFilterMatch")){
+	passDenominator = tagJetFilterMatch(jetTurnOnInfo, jetsHandle, trigObjsUnpacked, eta, phi);
+      }// tagFilterMatch
+
+
+      //
+      //  Require tag to pass cuts (Matches on the "near side" dR < 0.4)
+      // 
+      if(jetTurnOnInfo.exists("tagCut")){
+	passDenominator = tagJetCut(jetTurnOnInfo, jetsHandle, eta, phi);
+      }// tagCut
+
+
+      //
+      //  Require tag (Matches on the "near side" dR < 0.4)
+      // 
+      if(jetTurnOnInfo.exists("probeCut")){
+	passDenominator = probeJetCut(jetTurnOnInfo, jetsHandle, jet);
+      }// probeCut
+
+      //
+      //  Only fill histograms if demonator is passed
+      //
+      if(!passDenominator){
+	continue;
+      }
+
+      // 
+      // Fill the denominator
+      // 
+      hJets_den.at(turnOnNum).Fill(&jet);
+      if(jet.pt() > 100) hJets_den_pt100.at(turnOnNum).Fill(&jet);
+      if(passJetID(&jet)) hJets_den_jetID.at(turnOnNum).Fill(&jet);
+	  
+
+      // 
+      // Now the numerator cuts
+      // 
+      bool passNumerator = false;
+      if(jetTurnOnInfo.exists("numFilterMatch")){
+	string numName  = jetTurnOnInfo.getParameter<string>("numFilterMatch");
+
+	if(checkFilter(eta,phi,trigObjsUnpacked,numName)){
+	  passNumerator = true;
+	} 
+      }
+	
+      //
+      // Require a pt cut on the Numerator
+      //
+      if(jetTurnOnInfo.exists("numPtCut")){	
+	string filterMatch  = jetTurnOnInfo.getParameter<string>("numPtName");
+	double filterPt     = jetTurnOnInfo.getParameter<double>("numPtCut");
+	vector<const pat::TriggerObjectStandAlone*> onlineMatch = getMatchedObjs(eta, phi, trigObjsUnpacked, 0.1, filterMatch);
+
+	//if(onlineMatch.size() > 1)
+	// cout << " size of filterMatches " << onlineMatch.size() << endl;
+
+	for(auto& trigObj : onlineMatch){
+	  if(trigObj->pt() >= filterPt) passNumerator = true;
+	}
+
+      }
+
+
+      //
+      //  Fill Numerator hists
+      //
+      if(passNumerator){
+	hJets_num.at(turnOnNum).Fill(&jet);
+	if(jet.pt() > 100) hJets_num_pt100.at(turnOnNum).Fill(&jet);
+	if(passJetID(&jet)) hJets_num_jetID.at(turnOnNum).Fill(&jet);
+
+      }
+
+    }// Turn Ons
+
+  }// jets
+}//fillJetTurnOnPlots
+
+
+bool TriggerStudy::checkDenEventFilter(const edm::ParameterSet& jetTurnOnInfo, const vector<string>& filterNames, const vector<bool>& filterPassed){
+
+  string denName  = jetTurnOnInfo.getParameter<string>("denEventFilter");
+
+  vector<string>::const_iterator itr = std::find(filterNames.begin(), filterNames.end(), denName);
+  if(itr == filterNames.end()){
+    cout << "ERROR denEventFilter " << denName << " not found in filterNames  " << endl;
+    return false;
+  }
+
+  unsigned int denIndex = std::distance(filterNames.begin(), itr);
+  for(unsigned int iFilt = 0; iFilt < (denIndex+1); ++iFilt){
+    if(!filterPassed.at(iFilt)){
+      return false;
+    }
+  }
+
+  
+  return true;
+}//checkDenEventFilter
+
+
+
+bool TriggerStudy::tagJetFilterMatch(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, float probeEta, float probePhi ){
+
+  string tagName  = jetTurnOnInfo.getParameter<string>("tagFilterMatch");	
+  unsigned int    tagMin   = jetTurnOnInfo.getParameter<unsigned int>("tagFilterMin");	
+
+  // Loop on jets{
+  unsigned int nTags = 0;
+	  
+  for(auto& jetTag : *jetsHandle){
+    double etaTag = jetTag.eta();
+    double phiTag = jetTag.phi();    
+
+    //cout << " \t probe cand is pt / eta / phi " << jetProbe.pt() << " / " << etaProbe << " / " << phiProbe << endl;
+	  	  
+    const float dR2 = reco::deltaR2(probeEta,probePhi,etaTag,phiTag);
+    static const float dR2min = 0.4*0.4;
+
+    if(dR2 < dR2min) 
+      continue;
+
+    if(checkFilter(etaTag,phiTag,trigObjsUnpacked,tagName))
+      nTags++;
+
+  }
+	
+  if(nTags < tagMin){
+    //cout << "Fail probe"<< endl;
+    return false;
+  }
+
+  return true;
+}//tagJetFilterMatch
+
+
+
+bool TriggerStudy::tagJetCut(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle,
+			     float probeEta, float probePhi){
+
+  bool passTagCut = false;
+
+  // Only support away side btagging
+  string tagName  = jetTurnOnInfo.getParameter<string>("tagCut");	
+	  
+  bool reqBTag  = (tagName == "Btag");
+	  
+  bool passBTag  = !reqBTag;
+
+  if(reqBTag){
+
+    // Loop on jets{
+    for(auto& jetTag : *jetsHandle){
+    
+      double ptTag  = jetTag.pt();    
+      if(ptTag < 30) continue;
+
+      double etaTag = jetTag.eta();
+      double phiTag = jetTag.phi();    
+    
+      //cout << " \t tag cand is pt / eta / phi " << jetTag.pt() << " / " << etaTag << " / " << phiTag << " / " << (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb")) << endl;
+    	  	  
+      const float dR2 = reco::deltaR2(probeEta,probePhi,etaTag,phiTag);
+      static const float dR2min = 0.4*0.4;
+    
+      if(dR2 < dR2min) 
+	continue;
+    
+      //cout << " \t pass Tag " << endl;
+      double tagDeepFlavour = (jetTag.bDiscriminator("pfDeepFlavourJetTags:probb") + jetTag.bDiscriminator("pfDeepFlavourJetTags:probbb") + jetTag.bDiscriminator("pfDeepFlavourJetTags:problepb"));
+      if(tagDeepFlavour < 0.6) continue;
+    
+      passBTag = true;
+      break;
+    }
+  }
+	  
+  passTagCut = (passBTag);
+
+  if(!passTagCut){
+    return false;
+    //cout << "Fail tag"<< endl;
+  }
+
+  return true;
+}//tagJetCut
+
+
+bool TriggerStudy::probeJetCut(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const pat::Jet& jet){
+			       
+  bool passProbeCut = false;
+
+  // Only support near side btagging and truth bcuts 
+  string probeName  = jetTurnOnInfo.getParameter<string>("probeCut");	
+	  
+  bool reqBTag  = (probeName == "Btag"  || probeName == "trueBtag");
+  bool reqTrueB = (probeName == "trueB" || probeName == "trueBtag");
+	  
+  bool passBTag  = !reqBTag;
+  bool passTrueB = !reqTrueB;
+
+  if(reqBTag){
+    
+    double tagDeepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
+    if(tagDeepFlavour > 0.6){
+      passBTag = true;
+    }
+    
+  }
+
+  if(reqTrueB){
+    //cout << "Matching to trueB. " << endl;
+    //cout << " nBQs " << bQuarks.size() << endl;
+    for(const reco::GenParticle* bQ :  bQuarks){
+      double etaTrueB = bQ->p4().eta();
+      double phiTrueB = bQ->p4().phi();    
+	      
+      const float dR2 = reco::deltaR2(jet.eta(),jet.phi(),etaTrueB,phiTrueB);
+      static const float dR2min = 0.4*0.4;
+	      
+      if(dR2 > dR2min) 
+	continue;
+
+      passTrueB = true;
+      break;
+    }
+
+  }
+	  
+  passProbeCut = (passBTag & passTrueB);
+
+  if(!passProbeCut){
+    //cout << "Fail tag"<< endl;
+    return false;
+  }
+  
+  return true;
+}//probeJetCut
+
+
+
+//
+//
+// 
+bool CMSSWTools::passJetID(const pat::Jet* pfjet){
+    
+  double NHF  = pfjet->neutralHadronEnergyFraction();
+  double NEMF = pfjet->neutralEmEnergyFraction();
+  double CHF  = pfjet->chargedHadronEnergyFraction();
+  double MUF  = pfjet->muonEnergyFraction();
+  double CEMF = pfjet->chargedEmEnergyFraction();
+  int    NumConst = pfjet->chargedMultiplicity()+pfjet->neutralMultiplicity();
+  //int    NumNeutralParticles =pfjet->neutralMultiplicity();
+  int    CHM      = pfjet->chargedMultiplicity(); 
+  return (abs(pfjet->eta())<=2.6 && CEMF<0.8 && CHM>0 && CHF>0 && NumConst>1 && NEMF<0.9 && MUF <0.8 && NHF < 0.9 );
+
+}
+
+
+
 
 
 

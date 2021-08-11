@@ -133,48 +133,48 @@ bTagInfos = [
    ,'pfInclusiveSecondaryVertexFinderNegativeTagInfos'
    ,'softPFMuonsTagInfos'
    ,'softPFElectronsTagInfos'
-   ,'pfInclusiveSecondaryVertexFinderCvsLTagInfos'
-   ,'pfInclusiveSecondaryVertexFinderNegativeCvsLTagInfos'
+#   ,'pfInclusiveSecondaryVertexFinderCvsLTagInfos'
+#   ,'pfInclusiveSecondaryVertexFinderNegativeCvsLTagInfos'
    ,'pfDeepFlavourTagInfos'
 ]
 
 
 bTagDiscriminators = set([
-    'pfJetBProbabilityBJetTags'
-   ,'pfJetProbabilityBJetTags'
-   ,'pfPositiveOnlyJetBProbabilityBJetTags'
-   ,'pfPositiveOnlyJetProbabilityBJetTags'
+#    'pfJetBProbabilityBJetTags'
+#   ,'pfJetProbabilityBJetTags'
+#   ,'pfPositiveOnlyJetBProbabilityBJetTags'
+#   ,'pfPositiveOnlyJetProbabilityBJetTags'
     #,'pfNegativeOnlyJetBProbabilityBJetTags'
    #,'pfNegativeOnlyJetProbabilityBJetTags'
-   ,'pfTrackCountingHighPurBJetTags'
-   ,'pfTrackCountingHighEffBJetTags'
+#   ,'pfTrackCountingHighPurBJetTags'
+#   ,'pfTrackCountingHighEffBJetTags'
     #,'pfNegativeTrackCountingHighPurBJetTags'
     #,'pfNegativeTrackCountingHighEffBJetTags'
-   ,'pfSimpleSecondaryVertexHighEffBJetTags'
-   ,'pfSimpleSecondaryVertexHighPurBJetTags'
+#   ,'pfSimpleSecondaryVertexHighEffBJetTags'
+#   ,'pfSimpleSecondaryVertexHighPurBJetTags'
     #,'pfNegativeSimpleSecondaryVertexHighEffBJetTags'
     #,'pfNegativeSimpleSecondaryVertexHighPurBJetTags'
-   ,'pfCombinedSecondaryVertexV2BJetTags'
-   ,'pfPositiveCombinedSecondaryVertexV2BJetTags'
+    'pfCombinedSecondaryVertexV2BJetTags'
+#   ,'pfPositiveCombinedSecondaryVertexV2BJetTags'
     #,'pfNegativeCombinedSecondaryVertexV2BJetTags'
    ,'pfCombinedInclusiveSecondaryVertexV2BJetTags'
-   ,'pfPositiveCombinedInclusiveSecondaryVertexV2BJetTags'
+#   ,'pfPositiveCombinedInclusiveSecondaryVertexV2BJetTags'
     #,'pfNegativeCombinedInclusiveSecondaryVertexV2BJetTags'
    ,'softPFMuonBJetTags'
-   ,'positiveSoftPFMuonBJetTags'
+#   ,'positiveSoftPFMuonBJetTags'
     #,'negativeSoftPFMuonBJetTags'
    ,'softPFElectronBJetTags'
-   ,'positiveSoftPFElectronBJetTags'
+#   ,'positiveSoftPFElectronBJetTags'
     #,'negativeSoftPFElectronBJetTags'
    ,'pfCombinedMVAV2BJetTags'
     #,'pfNegativeCombinedMVAV2BJetTags'
-   ,'pfPositiveCombinedMVAV2BJetTags'
-   ,'pfCombinedCvsBJetTags'
+#   ,'pfPositiveCombinedMVAV2BJetTags'
+#   ,'pfCombinedCvsBJetTags'
     #,'pfNegativeCombinedCvsBJetTags'
-   ,'pfPositiveCombinedCvsBJetTags'
-   ,'pfCombinedCvsLJetTags'
+#   ,'pfPositiveCombinedCvsBJetTags'
+#   ,'pfCombinedCvsLJetTags'
     #,'pfNegativeCombinedCvsLJetTags'
-   ,'pfPositiveCombinedCvsLJetTags'
+#   ,'pfPositiveCombinedCvsLJetTags'
     # DeepCSV
   , 'pfDeepCSVJetTags:probudsg'
   , 'pfDeepCSVJetTags:probb'
@@ -184,10 +184,10 @@ bTagDiscriminators = set([
 #  , 'pfNegativeDeepCSVJetTags:probb'
 #  , 'pfNegativeDeepCSVJetTags:probc'
 #  , 'pfNegativeDeepCSVJetTags:probbb'
-  , 'pfPositiveDeepCSVJetTags:probudsg'
-  , 'pfPositiveDeepCSVJetTags:probb'
-  , 'pfPositiveDeepCSVJetTags:probc'
-  , 'pfPositiveDeepCSVJetTags:probbb'
+#  , 'pfPositiveDeepCSVJetTags:probudsg'
+#  , 'pfPositiveDeepCSVJetTags:probb'
+#  , 'pfPositiveDeepCSVJetTags:probc'
+#  , 'pfPositiveDeepCSVJetTags:probbb'
     # DeepFlavour
   , 'pfDeepFlavourJetTags:probb'
   , 'pfDeepFlavourJetTags:probbb'
@@ -222,7 +222,8 @@ storedDiscriminators = set([x.value() for x in patJetsDefault.discriminatorSourc
 print "INFO: Removing b-tag discriminators already stored in MiniAOD (with the exception of JP taggers)"
 jptaggers = {i for i in bTagDiscriminators if 'ProbabilityBJetTags' in i or i.startswith('pfDeepCSV')}
 bTagDiscriminators = (bTagDiscriminators - storedDiscriminators) | jptaggers
-
+print "bTagDiscriminators are"
+print bTagDiscriminators
 
 ## Reco jets
 from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
@@ -233,7 +234,6 @@ process.load("PhysicsTools.PatAlgos.producersLayer1.patCandidates_cff")
 process.load("PhysicsTools.PatAlgos.selectionLayer1.selectedPatCandidates_cff")
 
 from PhysicsTools.PatAlgos.tools.jetTools import *
-
 
 updateJetCollection(
         process,
@@ -251,13 +251,14 @@ updateJetCollection(
     )
 
 
+# Need ?
 process.load('PhysicsTools.PatAlgos.slimming.unpackedTracksAndVertices_cfi')
 
 
 #-------------------------------------
 ## Add TagInfos to PAT jets
-for i in ['patJets', 'patJetsFatPF', 'patJetsSoftDropSubjetsPF', 'patJetsPrunedSubjetsPF',
-          'updatedPatJetsTransientCorrected', 'updatedPatJetsTransientCorrectedFatPF', 'updatedPatJetsTransientCorrectedSoftDropSubjetsPF']:
+for i in ['patJets',  
+          'updatedPatJetsTransientCorrected']:
     m = i + postfix
     if hasattr(process,m) and getattr( getattr(process,m), 'addBTagInfo' ):
         print "Switching 'addTagInfos' for " + m + " to 'True'"
