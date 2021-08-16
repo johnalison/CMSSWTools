@@ -33,6 +33,10 @@
 #include <iostream>
 #include <math.h>
 #include <array>
+#include "RecoEgamma/EgammaTools/interface/ConversionTools.h"
+#include "DataFormats/EgammaCandidates/interface/ConversionFwd.h"
+#include "DataFormats/EgammaCandidates/interface/Conversion.h"
+#include <math.h>
 
 #include "CMSSWTools/TrigTools/interface/TriggerStudy.h"
 
@@ -255,7 +259,16 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
   L1JetsToken_(consumes<BXVector<l1t::Jet> >(iPara.getParameter<edm::InputTag>("L1Jets"))),
   GlobalAlgToken_(consumes<BXVector<GlobalAlgBlk> >(iPara.getParameter<edm::InputTag>("AlgInputTag"))),
   truthJetsToken_(consumes<edm::View<reco::GenJet> >(iPara.getParameter<edm::InputTag>("truthJets"))),
-  truthPartsToken_(consumes<edm::View<reco::GenParticle> >(iPara.getParameter<edm::InputTag>("truthParts")))
+  truthPartsToken_(consumes<edm::View<reco::GenParticle> >(iPara.getParameter<edm::InputTag>("truthParts"))),
+  vtxToken_(consumes<reco::VertexCollection>(iPara.getParameter<edm::InputTag>("vtxColl"))),
+  bsToken_(consumes<reco::BeamSpot>(edm::InputTag("offlineBeamSpot",""))),
+  electronToken_(consumes<edm::View<pat::Electron> >(iPara.getParameter<edm::InputTag>("electronColl"))),
+  conversionsToken_(mayConsume< reco::ConversionCollection >(iPara.getParameter<edm::InputTag>("conversions"))),
+  electronIdMapToken_(consumes<edm::ValueMap<bool> >(iPara.getParameter<edm::InputTag>("electronIdMap"))),
+  muonToken_(consumes<pat::MuonCollection>(iPara.getParameter<edm::InputTag>("muonColl"))),
+  metToken_(consumes<pat::METCollection>(iPara.getParameter<edm::InputTag>("metColl")))
+  
+
 			       //algInputTag_(iPara.getParameter<edm::InputTag>("AlgInputTag")),
 			       //extInputTag_(iPara.getParameter<edm::InputTag>("ExtInputTag"))
 {
@@ -263,16 +276,22 @@ TriggerStudy::TriggerStudy(const edm::ParameterSet& iPara):
   //
   // Load the Event Selection
   //
+  if(offlinePreSelection_.exists("minNSelMuon"))
+     minNSelMuon_      = offlinePreSelection_.getParameter<unsigned int>("minNSelMuon");
+
+  if(offlinePreSelection_.exists("minNSelElec"))
+     minNSelElec_      = offlinePreSelection_.getParameter<unsigned int>("minNSelElec");
+
+
   if(offlinePreSelection_.exists("minNSelJet"))
      minNSelJet_      = offlinePreSelection_.getParameter<unsigned int>("minNSelJet");
 
-  if(offlinePreSelection_.exists("minNTagMedJet"))
-    minNTagMedJet_   = offlinePreSelection_.getParameter<unsigned int>("minNTagMedJet");
-
-  if(offlinePreSelection_.exists("minNTagTightJet"))
-    minNTagTightJet_ = offlinePreSelection_.getParameter<unsigned int>("minNTagTightJet");
+  if(offlinePreSelection_.exists("minNTagJet"))
+    minNTagJet_ = offlinePreSelection_.getParameter<unsigned int>("minNTagJet");
   
-  edm::LogInfo("TriggerStudy") << " Offline Selection: minNSelJet: " << minNSelJet_ << "  minNTagMedJet: " << minNTagMedJet_ << " minNTagTightJet: " << minNTagTightJet_;
+  edm::LogInfo("TriggerStudy") << " Offline Selection: minNSelJet: " << minNSelJet_ << "  minNTagJet: " << minNTagJet_ 
+			       << " minNSelMuon: " << minNSelMuon_ 
+			       << " minNSelElec: " << minNSelElec_;
 
   if(doEmulation_){
     year_ = iPara.getParameter<string>("year");
@@ -341,7 +360,9 @@ void TriggerStudy::beginRun(edm::Run const&, edm::EventSetup const& evSetup){
 
 void TriggerStudy::endJob()
 {
-  edm::LogInfo("TriggerStudy") << "Total Events " << NEvents_all << " pass HLT Preselection " << NEvents_passHLTPreSelection << " pass Offline Preselection " << NEvents_passOfflinePreSelection;
+  edm::LogInfo("TriggerStudy") << "Total Events " << NEvents_all << " pass HLT Preselection " << NEvents_passHLTPreSelection 
+			       << " pass Lepton Preselection " << NEvents_passLeptonPreSelection
+			       << " pass Offline Preselection " << NEvents_passOfflinePreSelection;
 }
 
 void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetup)
@@ -370,7 +391,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 
   auto trigResultsHandle = getHandle(iEvent,trigResultsToken_) ;
   auto trigObjsHandle = getHandle(iEvent,trigObjsToken_); 
-  edm::Handle<edm::View<pat::Jet> > jetsHandle = getHandle(iEvent,jetsToken_);
+
 
   //
   //  HLT Preselection
@@ -394,6 +415,11 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     }
   }
   ++NEvents_passHLTPreSelection;
+
+  //
+  // Clear Event Data
+  //
+  thisEvent.resetEvent();
   
 
   //
@@ -403,22 +429,22 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     fillTruthInfo(iEvent);
 
     if(isBBMC_){
-      if(bosons.size() != 2){
-	cout << "ERROR not 2 bosons ..." << bosons.size() << " ... skipping " << endl;
+      if(thisEvent.bosons.size() != 2){
+	cout << "ERROR not 2 bosons ..." << thisEvent.bosons.size() << " ... skipping " << endl;
 	return;
       }
     
-      if(bQuarks.size() < 4){
-	cout << "ERROR too few b-quarks ..." << bQuarks.size() << " ... skipping " << endl;
+      if(thisEvent.bQuarks.size() < 4){
+	cout << "ERROR too few b-quarks ..." << thisEvent.bQuarks.size() << " ... skipping " << endl;
 	return;
       }
 
       //const LorentzVector&
-      reco::ParticleState::LorentzVector pB1 = bosons.at(0)->p4();
-      reco::ParticleState::LorentzVector pB2 = bosons.at(1)->p4();
+      reco::ParticleState::LorentzVector pB1 = thisEvent.bosons.at(0)->p4();
+      reco::ParticleState::LorentzVector pB2 = thisEvent.bosons.at(1)->p4();
       reco::ParticleState::LorentzVector pBB = pB1 + pB2;
-      mBB  = pBB.M();
-      pTBB = pBB.Pt();
+      thisEvent.mBB  = pBB.M();
+      thisEvent.pTBB = pBB.Pt();
     }
     
   }
@@ -428,72 +454,85 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
   //  Get offline info
   //  
   LogDebug ("TrigerStudy") << "Printing jets " << endl;
-
+  
   //
-  // Clear Event Data
+  //  Get the PV
   //
-  resetEvent();
+  edm::Handle<reco::VertexCollection> primaryVertices = getHandle(iEvent, vtxToken_);
+  //iEvent.getByToken(vtxToken_, primaryVertices);
+  const reco::Vertex &pVtx = *(primaryVertices->begin());
+  thisEvent.pVtx = &pVtx;
 
-  for(const pat::Jet& jet : *jetsHandle){
-
-    double pt = jet.pt();    
-
-    if(fabs(jet.eta()) > 2.4) continue;
-    
-    if(pt<30) continue;
-    hT30+=pt;
-    
-    if(pt < 40) continue;
-    ++nSelectedJets;
-    hT+=pt;
-
-    //cout << " " << jet.pt()  << " " << jet.eta() << " " << jet.phi() << " " << jet.pt()*jet.jecFactor("Uncorrected") <<  " " << jet.userFloat("caloJetMap:pt") << " " << jet.userFloat("pileupJetId:fullDiscriminant") 
-//  //	 << " " << jet.userFloat("pileupJetIdUpdated:fullDiscriminant") << " " << jet.userFloat("pileupJetIdUpdated:fullId")  
-    //	 << endl;;
-    //i, j.pt(), , , j.eta(), 
-
-    jet_pts.push_back(pt);
-    selJets.push_back(&jet);
-
-    double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
-    //cout << " " << jet.pt()  << " " << jet.eta() << " " << jet.phi() << " " << deepFlavour << " " << jet.pt()*jet.jecFactor("Uncorrected") <<  " " << jet.userFloat("caloJetMap:pt") << " " << jet.userFloat("pileupJetId:fullDiscriminant") 
-    //  //<< " " << jet.userFloat("pileupJetIdUpdated:fullDiscriminant") << " " << jet.userFloat("pileupJetIdUpdated:fullId")  
-    //	 << endl;;
+   //
+   //  Get beam spot
+   //
+  edm::Handle<reco::BeamSpot> bsHandle = getHandle(iEvent, bsToken_);
+  const reco::BeamSpot &beamspot = *bsHandle.product();
+  thisEvent.beamspot = &beamspot;
 
 
-    if(deepFlavour < 0.2770) continue;
-    ++nTaggedJetsMed;
+  // 
+  //  Get Selected Muons
+  // 
+  edm::Handle<pat::MuonCollection> muonsHandle = getHandle(iEvent, muonToken_);
+  getSelectedMuons(muonsHandle, pVtx);
+  //cout << " NSel Muons " << thisEvent.selMuons.size()<< endl;
 
-    if(deepFlavour < 0.6) continue;
-    ++nTaggedJets;
-
-    tagJet_pts.push_back(pt);
-    tagJets.push_back(&jet);
+  if(thisEvent.selMuons.size() < minNSelMuon_) {
+    LogDebug ("TrigerStudy") << "Failed minNSelMuon " << endl;
+    return;
   }
+
+
+  //
+  //  Get Selected Electrons
+  //
+  edm::Handle<edm::View<pat::Electron> > elecsHandle = getHandle(iEvent, electronToken_);  
+  edm::Handle<reco::ConversionCollection> convHandle = getHandle(iEvent, conversionsToken_);
+  edm::Handle<edm::ValueMap<bool> > eIDHandle = getHandle(iEvent, electronIdMapToken_);
+  getSelectedElectrons(elecsHandle, convHandle, eIDHandle);
+  //cout << " NSel Eelcs " << thisEvent.selElecs.size()<< endl;
+
+  if(thisEvent.selElecs.size() < minNSelElec_) {
+    LogDebug ("TrigerStudy") << "Failed minNSelElec " << endl;
+    return;
+  }
+  ++NEvents_passLeptonPreSelection;
+
+  //
+  //  Get Met
+  //
+  edm::Handle<pat::METCollection> metHandle = getHandle(iEvent, metToken_);
+  const pat::MET &met = metHandle->front();
+  thisEvent.met = &met;
+  //cout << " Met is " << met.pt() << endl;
+
+
+
+  // 
+  //  Get Selected Jets
+  // 
+  edm::Handle<edm::View<pat::Jet> > jetsHandle = getHandle(iEvent,jetsToken_);
+  getSelectedJets(jetsHandle);
 
 
   //
   //  Offline Cuts
   //
-  if(nSelectedJets < minNSelJet_) {
+  if(thisEvent.selJets.size() < minNSelJet_) {
     LogDebug ("TrigerStudy") << "Failed minNSelJet " << endl;
     return;
   }
 
-  if(nTaggedJetsMed < minNTagMedJet_) {
-    LogDebug ("TrigerStudy") << "Failed minNTagMedJet " << endl;
-    return;
-  }
-
-  if(nTaggedJets < minNTagTightJet_) {
-    LogDebug ("TrigerStudy") << "Failed minNTagTightJet " << endl;
+  if(thisEvent.tagJets.size() < minNTagJet_) {
+    LogDebug ("TrigerStudy") << "Failed minNTagJet " << endl;
     return;
   }
   ++NEvents_passOfflinePreSelection;
 
 
   // Fill all events
-  hAll.at(0).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets);
+  hAll.at(0).Fill(thisEvent);
     
 
   //now we will look at the filters passed
@@ -540,7 +579,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
       if(printFilters) cout << thisFilter << " ";
       if(!thisFilter) break;
     
-      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets);
+      hAll.at(filterNum).Fill(thisEvent);
       ++filterNum;
     }
 
@@ -570,7 +609,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
 	}
       }
     }
-
+    
 
   }// not doing emulation
 
@@ -678,7 +717,7 @@ void TriggerStudy::analyze(const edm::Event& iEvent,const edm::EventSetup& iSetu
     //  If fail requirementss
     // 
     if(passRequired && passVeto){
-      hTrigStudy.at(iTrig).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets);
+      hTrigStudy.at(iTrig).Fill(thisEvent);
     }
     
     ++iTrig;
@@ -827,7 +866,7 @@ void TriggerStudy::setupTrigEmulator(std::string year){
 
 void TriggerStudy::fillTruthInfo(const edm::Event& iEvent){
 
-  edm::Handle<edm::View<reco::GenJet> > truthJetsHandle = getHandle(iEvent,truthJetsToken_);
+  edm::Handle<edm::View<reco::GenJet> >      truthJetsHandle  = getHandle(iEvent,truthJetsToken_);
   edm::Handle<edm::View<reco::GenParticle> > truthPartsHandle = getHandle(iEvent,truthPartsToken_);
 
   for(const reco::GenParticle& tPart : *truthPartsHandle){
@@ -840,8 +879,8 @@ void TriggerStudy::fillTruthInfo(const edm::Event& iEvent){
 
     if(!tPart.isLastCopy()) continue;
 
-    if(isBoson)  bosons.push_back(&tPart);
-    if(isBQuark) bQuarks.push_back(&tPart);
+    if(isBoson)  thisEvent.bosons.push_back(&tPart);
+    if(isBQuark) thisEvent.bQuarks.push_back(&tPart);
 
     //    cout << "Truth Part " << tPart.pt() << " " << tPart.eta()   << " " << tPart.phi()  << "  pdgID " << tPart.pdgId() << " nDaughters " << tPart.numberOfDaughters() 
     //	 << " nMothers " << tPart.numberOfMothers()
@@ -855,7 +894,7 @@ void TriggerStudy::fillTruthInfo(const edm::Event& iEvent){
 
 void TriggerStudy::doTrigEmulation(){
 
-  trigEmulatorDetails->SetWeights  (jet_pts, tagJet_pts, hT30);
+  trigEmulatorDetails->SetWeights  (thisEvent.jet_pts, thisEvent.tagJet_pts, thisEvent.hT30);
 
 
   unsigned int filterNum = 1; // 0 is All
@@ -863,11 +902,11 @@ void TriggerStudy::doTrigEmulation(){
     string name = filterInfo.getParameter<string>("histName");
 
     if(name == "HLT_OR"){
-      float triggerWeight = trigEmulator->GetWeightOR(jet_pts, tagJet_pts, hT30);
-      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets, triggerWeight);	
+      float triggerWeight = trigEmulator->GetWeightOR(thisEvent.jet_pts, thisEvent.tagJet_pts, thisEvent.hT30);
+      hAll.at(filterNum).Fill(thisEvent, triggerWeight);	
     }else{
       float triggerWeight = trigEmulatorDetails->GetWeight("EMU_"+name);      
-      hAll.at(filterNum).Fill(mBB, pTBB, nSelectedJets, hT, hT30, selJets, tagJets, triggerWeight);
+      hAll.at(filterNum).Fill(thisEvent, triggerWeight);
     }
 
     ++filterNum;
@@ -875,20 +914,6 @@ void TriggerStudy::doTrigEmulation(){
 
 }//doTrigEmulation
 
-void TriggerStudy::resetEvent(){
-  nSelectedJets = 0;
-  nTaggedJetsMed = 0;
-  nTaggedJets = 0;
-
-  jet_pts .clear();
-  tagJet_pts.clear();
-  
-  selJets.clear();
-  tagJets.clear();
-  
-  hT = 0;
-  hT30 = 0;
-}
 
 
 
@@ -1215,7 +1240,7 @@ bool TriggerStudy::probeJetCut(const edm::ParameterSet& jetTurnOnInfo, edm::Hand
   if(reqTrueB){
     //cout << "Matching to trueB. " << endl;
     //cout << " nBQs " << bQuarks.size() << endl;
-    for(const reco::GenParticle* bQ :  bQuarks){
+    for(const reco::GenParticle* bQ :  thisEvent.bQuarks){
       double etaTrueB = bQ->p4().eta();
       double phiTrueB = bQ->p4().phi();    
 	      
@@ -1241,6 +1266,123 @@ bool TriggerStudy::probeJetCut(const edm::ParameterSet& jetTurnOnInfo, edm::Hand
   return true;
 }//probeJetCut
 
+
+void TriggerStudy::getSelectedJets(edm::Handle<edm::View<pat::Jet> > jetsHandle){
+
+  for(const pat::Jet& jet : *jetsHandle){
+
+    double pt = jet.pt();    
+    double eta = jet.eta();
+    if(fabs(eta) > 2.4) continue;
+    
+    if(pt<30) continue;
+    thisEvent.hT30+=pt;
+    
+    if(pt < 40) continue;
+    thisEvent.hT+=pt;
+
+    
+    // Add overlapp removal
+    bool passOverlap = true;
+    double phi = jet.phi();
+    for(const pat::Electron* elec : thisEvent.selElecs){
+      const float dR2 = reco::deltaR2(eta,phi,elec->eta(),elec->phi());
+      if(dR2 < 0.4*0.4){
+	passOverlap = false;
+	//cout << "failed electron overlap  " << sqrt(dR2) << endl;
+      }
+    }
+
+
+    for(const pat::Muon* muon : thisEvent.selMuons){
+      const float dR2 = reco::deltaR2(eta,phi,muon->eta(),muon->phi());
+      if(dR2 < 0.4*0.4){
+	passOverlap = false;
+	//cout << "failed muon overlap  " << sqrt(dR2) << endl;
+      }
+    }
+
+    if(!passOverlap) continue;
+
+    thisEvent.jet_pts.push_back(pt);
+    thisEvent.selJets.push_back(&jet);
+
+    double deepFlavour = (jet.bDiscriminator("pfDeepFlavourJetTags:probb") + jet.bDiscriminator("pfDeepFlavourJetTags:probbb") + jet.bDiscriminator("pfDeepFlavourJetTags:problepb"));
+    //cout << " " << jet.pt()  << " " << jet.eta() << " " << jet.phi() << " " << deepFlavour << " " << jet.pt()*jet.jecFactor("Uncorrected") <<  " " << jet.userFloat("caloJetMap:pt") << " " << jet.userFloat("pileupJetId:fullDiscriminant") 
+    //  //<< " " << jet.userFloat("pileupJetIdUpdated:fullDiscriminant") << " " << jet.userFloat("pileupJetIdUpdated:fullId")  
+    //	 << endl;;
+
+
+    if(deepFlavour < 0.6) continue;
+
+    thisEvent.tagJet_pts.push_back(pt);
+    thisEvent.tagJets.push_back(&jet);
+  }
+}
+
+void TriggerStudy::getSelectedMuons(edm::Handle<pat::MuonCollection> muonsHandle, const reco::Vertex &pVtx){
+
+  float muon_cut_pt_ = 25;
+  float muon_cut_eta_ = 2.4;
+  float muon_cut_iso_ = 0.12;
+  //iEvent.getByToken(muonToken_, muHa);
+
+  for (const pat::Muon &mu : *muonsHandle) { 
+    bool passKinPreSel( mu.pt() > 8  && fabs(mu.eta()) < muon_cut_eta_ );
+    if(!passKinPreSel) continue;
+    thisEvent.allMuons.push_back(&mu);
+    
+    bool passKin( mu.pt() > muon_cut_pt_  && fabs(mu.eta()) < muon_cut_eta_ );
+    if(!passKin) continue;
+
+    //cf. https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
+    //bool isMedium(muon::isMediumMuon(mu));
+    bool isTight(muon::isTightMuon(mu,pVtx));
+    bool passID(isTight);
+    if(!passID) continue;
+
+    double nhIso   = mu.neutralHadronIso();
+    double puchIso = mu.puChargedHadronIso();
+    double chIso   = mu.chargedHadronIso() ;
+    double gIso    = mu.photonIso() ;
+    double relIso  = (TMath::Max(Float_t(nhIso+gIso-0.5*puchIso),Float_t(0.))+chIso)/mu.pt();
+    bool passIso( relIso < muon_cut_iso_ );
+    if(!passIso)  continue;
+    thisEvent.selMuons.push_back(&mu);
+  }
+}
+
+
+void TriggerStudy::getSelectedElectrons(edm::Handle<edm::View<pat::Electron> > elecsHandle, edm::Handle<reco::ConversionCollection> convHandle, edm::Handle<edm::ValueMap<bool> > eIDHandle){
+  float electron_cut_pt_ = 25;
+  float electron_cut_eta_ = 2.4;
+  //float electron_cut_iso_ = 0.11;
+  
+
+  for (size_t i = 0; i < elecsHandle->size(); ++i)
+    {
+      const auto el = elecsHandle->ptrAt(i);
+      const pat::Electron & elec = *el;
+  
+      bool passKin(elec.pt() > electron_cut_pt_ && 
+		   fabs(elec.superCluster()->eta()) < electron_cut_eta_ && 
+		   (elec.isEB() || elec.isEE()));
+      if(!passKin) continue;
+
+      thisEvent.allElecs.push_back(&elec);
+
+      // Conversion rejection
+      bool passConvVeto = !ConversionTools::hasMatchedConversion(elec,*convHandle,thisEvent.beamspot->position());
+
+      //cut-based electron id+iso
+      //cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
+      bool passElectronID = (*eIDHandle)[el];
+      bool passID( passConvVeto && passElectronID);
+      if(!passID) continue;
+
+      thisEvent.selElecs.push_back(&elec);
+    }
+}
 
 
 //

@@ -5,6 +5,7 @@
 <use   name="DataFormats/Common"/>
 <use   name="DataFormats/EcalRecHit"/>
 <use   name="DataFormats/METReco"/>
+<use   name="DataFormats/EgammaCandidates"/>
 <use   name="HLTrigger/HLTcore"/>
 <use   name="TrackingTools/GsfTools"/>
 <use   name="MagneticField/Records"/>
@@ -17,6 +18,7 @@
 <use   name="Geometry/CaloGeometry"/>
 <use   name="DataFormats/CaloTowers"/>
 <use   name="TriggerEmulator/nTupleAnalysis"/>
+<use name="RecoEgamma/EgammaTools"/>
 <export>
   <lib   name="1"/>
 </export>

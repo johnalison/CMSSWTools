@@ -2,6 +2,9 @@
 #if !defined(TriggerStudy_H)
 #define TriggerStudy_H
 
+#include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/PatCandidates/interface/MET.h"
 
 namespace CMSSWTools {
 
@@ -21,8 +24,9 @@ namespace CMSSWTools {
     string year_;
     edm::ParameterSet offlinePreSelection_;
     unsigned int minNSelJet_ = 0;
-    unsigned int minNTagMedJet_ = 0;
-    unsigned int minNTagTightJet_ = 0;
+    unsigned int minNSelMuon_ = 0;
+    unsigned int minNSelElec_ = 0;
+    unsigned int minNTagJet_ = 0;
     bool isMC_;
     bool isBBMC_;
     bool testL1_;
@@ -43,21 +47,76 @@ namespace CMSSWTools {
     edm::EDGetTokenT<edm::View<reco::GenParticle> > truthPartsToken_;
     edm::Service<TFileService> fs;
 
+    edm::EDGetTokenT<reco::VertexCollection> vtxToken_;
+    edm::EDGetTokenT<reco::BeamSpot> bsToken_;
+    edm::EDGetTokenT<edm::View<pat::Electron> > electronToken_;
+    edm::EDGetTokenT<reco::ConversionCollection> conversionsToken_;
+    edm::EDGetTokenT<edm::ValueMap<bool> > electronIdMapToken_;
+    edm::EDGetTokenT<pat::MuonCollection> muonToken_;
+    edm::EDGetTokenT<pat::METCollection> metToken_;
+
     // Event Data
-    void resetEvent();
-    unsigned int nSelectedJets = 0;
-    unsigned int nTaggedJetsMed = 0;
-    unsigned int nTaggedJets = 0;
+    struct eventData { 
 
+      vector<float> jet_pts;
+      vector<float> tagJet_pts;
+  
+      vector<const pat::Jet*> selJets;
+      vector<const pat::Jet*> tagJets;
 
-    vector<float> jet_pts;
-    vector<float> tagJet_pts;
+      vector<const pat::Muon*> selMuons;
+      vector<const pat::Muon*> allMuons;
+
+      vector<const pat::Electron*> selElecs;
+      vector<const pat::Electron*> allElecs;
+
+      float hT = 0;
+      float hT30 = 0;
+
+      float mBB  = -1;
+      float pTBB = -1;
+      vector<const reco::GenParticle*> bQuarks;
+      vector<const reco::GenParticle*> bosons;
+      const reco::Vertex* pVtx  = nullptr;; 
+      const reco::BeamSpot* beamspot  = nullptr;;
+      const pat::MET* met = nullptr;
+
+      void resetEvent(){
+	
+	pVtx = nullptr;
+	beamspot = nullptr;
+	met = nullptr;
+
+	jet_pts .clear();
+	tagJet_pts.clear();
   
-    vector<const pat::Jet*> selJets;
-    vector<const pat::Jet*> tagJets;
+	selJets.clear();
+	tagJets.clear();
+
+	selMuons.clear();
+	allMuons.clear();
+
+	selElecs.clear();
+	allElecs.clear();
   
-    float hT = 0;
-    float hT30 = 0;
+	hT = 0;
+	hT30 = 0;
+
+	mBB  = -1;
+	pTBB = -1;
+	bQuarks.clear();
+	bosons .clear();
+
+      }
+
+      
+    };
+
+    eventData thisEvent;
+
+    void getSelectedJets(edm::Handle<edm::View<pat::Jet> > jetsHandle);
+    void getSelectedMuons(edm::Handle<pat::MuonCollection> muonsHandle, const reco::Vertex &pVtx);
+    void getSelectedElectrons(edm::Handle<edm::View<pat::Electron> > elecsHandle, edm::Handle<reco::ConversionCollection> convHandle, edm::Handle<edm::ValueMap<bool> > eIDHandle);
 
     // Trigger Decisiosn
     void setEventLevelHLTFilterDecisions(const std::vector<bool>& L1word, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, vector<string>& filterNames, vector<bool>& filterPassed);
@@ -66,6 +125,7 @@ namespace CMSSWTools {
 
     // counters
     unsigned int NEvents_all = 0;
+    unsigned int NEvents_passLeptonPreSelection = 0;
     unsigned int NEvents_passHLTPreSelection = 0;
     unsigned int NEvents_passOfflinePreSelection = 0;
 
@@ -147,23 +207,137 @@ namespace CMSSWTools {
     };
 
 
+
+    struct muonHists {
+
+      TH1F* h_pt;
+      TH1F* h_pt_s;
+      TH1F* h_phi;
+      TH1F* h_eta;
+      TH1F* h_passID;
+      TH1F* h_relIso;
+
+      muonHists(TFileDirectory& jetDir, string cutName ){
+	h_pt          = jetDir.make<TH1F>( ("pt"+cutName).c_str()  , "p_{T}", 250,  0., 500. );
+	h_pt_s        = jetDir.make<TH1F>( ("pt_s"+cutName).c_str()  , "p_{T}",200,  0., 100. );
+	h_phi         = jetDir.make<TH1F>( ("phi"+cutName).c_str()  , "phi",  100,  -3.2, 3.2 );
+	h_eta         = jetDir.make<TH1F>( ("eta"+cutName).c_str()  , "eta",  100,  -4, 4 );
+	h_passID      = jetDir.make<TH1F>( ("passID"+cutName).c_str()  , "passID",  2,  -0.5, 1.5 );
+	h_relIso      = jetDir.make<TH1F>( ("relIso"+cutName).c_str()  , "relIso",  100,  -0.1, 1.1 );
+      }
+
+      void Fill(const pat::Muon* muon, const reco::Vertex* pVtx, float weight = 1.0 ){
+	h_pt          ->Fill(muon->pt(), weight);
+	h_pt_s        ->Fill(muon->pt(), weight);
+	h_phi         ->Fill(muon->phi(), weight);
+	h_eta         ->Fill(muon->eta(), weight);
+
+	//cf. https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
+	//bool isMedium(muon::isMediumMuon(mu));
+	bool isTight(muon::isTightMuon(*muon,*pVtx));
+	bool passID(isTight);
+	h_passID   ->Fill(passID, weight);
+
+	double nhIso   = muon->neutralHadronIso();
+	double puchIso = muon->puChargedHadronIso();
+	double chIso   = muon->chargedHadronIso() ;
+	double gIso    = muon->photonIso() ;
+	double relIso  = (TMath::Max(Float_t(nhIso+gIso-0.5*puchIso),Float_t(0.))+chIso)/muon->pt();
+	h_relIso   ->Fill(relIso, weight);
+
+      }
+
+    
+
+    };
+
+
+    struct elecHists {
+
+      TH1F* h_pt;
+      TH1F* h_pt_s;
+      TH1F* h_phi;
+      TH1F* h_eta;
+      TH1F* h_passID;
+      TH1F* h_passConvID;
+      TH1F* h_passPID;
+
+      elecHists(TFileDirectory& jetDir, string cutName ){
+	h_pt          = jetDir.make<TH1F>( ("pt"+cutName).c_str()  , "p_{T}", 250,  0., 500. );
+	h_pt_s        = jetDir.make<TH1F>( ("pt_s"+cutName).c_str()  , "p_{T}",200,  0., 100. );
+	h_phi         = jetDir.make<TH1F>( ("phi"+cutName).c_str()  , "phi",  100,  -3.2, 3.2 );
+	h_eta         = jetDir.make<TH1F>( ("eta"+cutName).c_str()  , "eta",  100,  -4, 4 );
+	h_passID      = jetDir.make<TH1F>( ("passID"+cutName).c_str()  , "passID",  2,  -0.5, 1.5 );
+	h_passConvID      = jetDir.make<TH1F>( ("passConvID"+cutName).c_str()  , "passConvID",  2,  -0.5, 1.5 );
+	h_passPID      = jetDir.make<TH1F>( ("passPID"+cutName).c_str()  , "passPID",  2,  -0.5, 1.5 );
+
+      }
+
+      void Fill(const pat::Electron* elec, const reco::BeamSpot* beamspot, float weight = 1.0 ){
+	h_pt          ->Fill(elec->pt(), weight);
+	h_pt_s        ->Fill(elec->pt(), weight);
+	h_phi         ->Fill(elec->phi(), weight);
+	h_eta         ->Fill(elec->eta(), weight);
+
+	//cf. https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
+	//bool isMedium(muon::isMediumMuon(mu));
+	//bool isTight(muon::isTightMuon(*muon,*pVtx));
+	//bool passID(isTight);
+	//h_passID   ->Fill(passID, weight);
+
+	//// Conversion rejection
+	//bool passConvVeto = !ConversionTools::hasMatchedConversion(elec,*convHandle,thisEvent.beamspot->position());
+	//
+	////cut-based electron id+iso
+	////cf. https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
+	//cout << "Getting electron ID " << endl;
+	//bool passElectronID = (*eIDHandle)[el];
+	//cout << "passElectronID: " << passElectronID << endl;
+	//bool passID( passConvVeto && passElectronID);
+
+
+      }
+
+    
+
+    };
+
+
+
+
     struct eventHists {
 
       TH1F* h_mBB      = nullptr;
       TH1F* h_pTBB     = nullptr;
       TH1F* h_nSelJets = nullptr;
+      TH1F* h_nTagJets = nullptr;
+
+      TH1F* h_nSelMuons = nullptr;
+      TH1F* h_nAllMuons = nullptr;
+
+      TH1F* h_nSelElecs = nullptr;
+      TH1F* h_nAllElecs = nullptr;
+
       TH1F* h_hT       = nullptr;    
       TH1F* h_hT30     = nullptr;    
       TH1F* h_hT_s     = nullptr;    
       TH1F* h_hT30_s   = nullptr;    
       TH1F* h_hT30_l   = nullptr;    
 
+      TH1F* h_met       = nullptr;    
+
       jetHists* h_selJets = nullptr;
       jetHists* h_tagJets = nullptr;
       jetHists* h_leadJet = nullptr;
-      jetHists* h_sublJet = nullptr;
+      //jetHists* h_sublJet = nullptr;
       jetHists* h_leadTag = nullptr;
-      jetHists* h_sublTag = nullptr;
+      //jetHists* h_sublTag = nullptr;
+
+      muonHists* h_allMuons = nullptr;
+      muonHists* h_selMuons = nullptr;
+
+      elecHists* h_allElecs = nullptr;
+      elecHists* h_selElecs = nullptr;
 
 
       eventHists(edm::Service<TFileService>& fs, string cutName, bool isBBMC ){
@@ -172,49 +346,96 @@ namespace CMSSWTools {
 	  h_pTBB     = fs->make<TH1F>( ("pTBB_"+cutName).c_str()  , "pT_{BB}", 100,  0., 1000. );
 	}
 	h_nSelJets = fs->make<TH1F>( ("nSelJet_"+cutName).c_str()  , "Selected Jet Multiplicity",  16,  -0.5, 15.5 );
+	h_nSelMuons = fs->make<TH1F>( ("nSelMuons_"+cutName).c_str()  , "Selected Muon Multiplicity",  5,  -0.5, 4.5 );
+	h_nAllMuons = fs->make<TH1F>( ("nAllMuons_"+cutName).c_str()  , "PreSelected Muon Multiplicity",  5,  -0.5, 4.5 );
+
+	h_nSelElecs = fs->make<TH1F>( ("nSelElecs_"+cutName).c_str()  , "Selected Elec Multiplicity",  10,  -0.5, 9.5 );
+	h_nAllElecs = fs->make<TH1F>( ("nAllElecs_"+cutName).c_str()  , "PreSelected Elec Multiplicity",  10,  -0.5, 9.5 );
+
+	h_nTagJets = fs->make<TH1F>( ("nTagJet_"+cutName).c_str()  , "Tag Jet Multiplicity",  16,  -0.5, 15.5 );
 	h_hT       = fs->make<TH1F>( ("hT_"+cutName).c_str()  , "hT",  200,  0, 1000 );
 	h_hT30     = fs->make<TH1F>( ("hT30_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 1000 );
 	h_hT30_l   = fs->make<TH1F>( ("hT30_l_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 2000 );
-      
+
+	h_met       = fs->make<TH1F>( ("MeT_"+cutName).c_str()  , "MeT",  200,  0, 1000 );      
 
 	TFileDirectory selJetsDir = fs->mkdir( "selJets" );
 	TFileDirectory tagJetsDir = fs->mkdir( "tagJets" );
 	TFileDirectory leadJetDir = fs->mkdir( "leadJet" );
-	TFileDirectory sublJetDir = fs->mkdir( "sublJet" );
+	//TFileDirectory sublJetDir = fs->mkdir( "sublJet" );
 	TFileDirectory leadTagDir = fs->mkdir( "leadTag" );
-	TFileDirectory sublTagDir = fs->mkdir( "sublTag" );
+	//TFileDirectory sublTagDir = fs->mkdir( "sublTag" );
+
+	TFileDirectory allMuonDir = fs->mkdir( "allMuons" );
+	TFileDirectory selMuonDir = fs->mkdir( "selMuons" );
+
+	TFileDirectory allElecDir = fs->mkdir( "allElecs" );
+	TFileDirectory selElecDir = fs->mkdir( "selElecs" );
 
 
 	h_selJets = new jetHists(selJetsDir, "_"+cutName);
 	h_tagJets = new jetHists(tagJetsDir, "_"+cutName);
 	h_leadJet = new jetHists(leadJetDir, "_"+cutName);
-	h_sublJet = new jetHists(sublJetDir, "_"+cutName);
+	//h_sublJet = new jetHists(sublJetDir, "_"+cutName);
 	h_leadTag = new jetHists(leadTagDir, "_"+cutName);
-	h_sublTag = new jetHists(sublTagDir, "_"+cutName);
+	//h_sublTag = new jetHists(sublTagDir, "_"+cutName);
+
+	h_allMuons = new muonHists(allMuonDir, "_"+cutName);
+	h_selMuons = new muonHists(selMuonDir, "_"+cutName);
+
+	h_allElecs = new elecHists(allElecDir, "_"+cutName);
+	h_selElecs = new elecHists(selElecDir, "_"+cutName);
 
       }
 
-      void Fill(double mBB, double pTBB, unsigned int nSelJets, double hT, double hT30, vector<const pat::Jet*> selJets, vector<const pat::Jet*> tagJets, float weight = 1.0 ){
-	if(h_mBB)  h_mBB      ->Fill(mBB, weight);
-	if(h_pTBB) h_pTBB     ->Fill(pTBB, weight);
-	h_nSelJets ->Fill(nSelJets, weight);
-	h_hT       ->Fill(hT, weight);
-	h_hT30     ->Fill(hT30, weight);
-	h_hT30_l     ->Fill(hT30, weight);
+      void Fill(const eventData& thisEvent, float weight = 1.0 ){
+	if(h_mBB)  h_mBB      ->Fill(thisEvent.mBB,   weight);
+	if(h_pTBB) h_pTBB     ->Fill(thisEvent.pTBB,  weight);
+	h_nSelJets  ->Fill(thisEvent.selJets.size(),  weight);
+	h_nTagJets  ->Fill(thisEvent.tagJets.size(),  weight);
+	h_nSelMuons ->Fill(thisEvent.selMuons.size(), weight);
+	h_nAllMuons ->Fill(thisEvent.allMuons.size(), weight);
 
-	for(const pat::Jet* jet: selJets){
+	h_nSelElecs ->Fill(thisEvent.selElecs.size(), weight);
+	h_nAllElecs ->Fill(thisEvent.allElecs.size(), weight);
+
+	h_hT       ->Fill(thisEvent.hT,   weight);
+	h_hT30     ->Fill(thisEvent.hT30, weight);
+	h_hT30_l   ->Fill(thisEvent.hT30, weight);
+
+	h_met       ->Fill(thisEvent.met->pt(),   weight);
+
+	for(const pat::Jet* jet: thisEvent.selJets){
 	  h_selJets->Fill(jet, weight);
 	}
 
-	for(const pat::Jet* jet: tagJets){
+	for(const pat::Jet* jet: thisEvent.tagJets){
 	  h_tagJets->Fill(jet, weight);
 	}
 
-	if(selJets.size() > 0) h_leadJet->Fill(selJets.at(0), weight);
-	if(selJets.size() > 1) h_sublJet->Fill(selJets.at(1), weight);
+	for(const pat::Muon* muon: thisEvent.allMuons){
+	  h_allMuons->Fill(muon, thisEvent.pVtx, weight);
+	}
 
-	if(tagJets.size() > 0) h_leadTag->Fill(tagJets.at(0), weight);
-	if(tagJets.size() > 1) h_sublTag->Fill(tagJets.at(1), weight);
+	for(const pat::Muon* muon: thisEvent.selMuons){
+	  h_selMuons->Fill(muon, thisEvent.pVtx, weight);
+	}
+
+
+	for(const pat::Electron* elec: thisEvent.allElecs){
+	  h_allElecs->Fill(elec, thisEvent.beamspot, weight);
+	}
+
+	for(const pat::Electron* elec: thisEvent.selElecs){
+	  h_selElecs->Fill(elec, thisEvent.beamspot, weight);
+	}
+
+
+	if(thisEvent.selJets.size() > 0) h_leadJet->Fill(thisEvent.selJets.at(0), weight);
+	//if(selJets.size() > 1) h_sublJet->Fill(selJets.at(1), weight);
+
+	if(thisEvent.tagJets.size() > 0) h_leadTag->Fill(thisEvent.tagJets.at(0), weight);
+	//if(tagJets.size() > 1) h_sublTag->Fill(tagJets.at(1), weight);
 
       }
 
@@ -263,10 +484,6 @@ namespace CMSSWTools {
     //
     // Truth Info
     //
-    float mBB  = -1;
-    float pTBB = -1;
-    vector<const reco::GenParticle*> bQuarks;
-    vector<const reco::GenParticle*> bosons;
     void fillTruthInfo(const edm::Event& iEvent);
 
   public:

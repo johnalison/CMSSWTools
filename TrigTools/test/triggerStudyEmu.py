@@ -255,6 +255,7 @@ updateJetCollection(
 process.load('PhysicsTools.PatAlgos.slimming.unpackedTracksAndVertices_cfi')
 
 
+
 #-------------------------------------
 ## Add TagInfos to PAT jets
 for i in ['patJets',  
@@ -267,6 +268,20 @@ for i in ['patJets',
 
 
 
+
+
+#electron id
+from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
+
+switchOnVIDElectronIdProducer(process, DataFormat.MiniAOD)
+
+
+# Set up electron ID (VID framework)
+from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
+switchOnVIDElectronIdProducer(process, dataFormat=DataFormat.MiniAOD)
+my_id_modules = ['RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Fall17_94X_V2_cff']
+for idmod in my_id_modules:
+    setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
 
 
 #HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_CaloDiJet30_v
@@ -294,11 +309,23 @@ for i in ['patJets',
 from CMSSWTools.TrigTools.TurnOns_EMuPFBtagDeepCSV_2018 import triggerConfig_EMuPFBtagDeepCSV, triggerStudyBase_EMuPFBtagDeepCSV
 triggerStudyBase_EMuPFBtagDeepCSV.isMC = cms.bool(options.isMC)
 triggerStudyBase_EMuPFBtagDeepCSV.jets = cms.InputTag(patJetSource)
+triggerStudyBase_EMuPFBtagDeepCSV.vtxColl = cms.InputTag("offlineSlimmedPrimaryVertices")
+#triggerStudyBase_EMuPFBtagDeepCSV.offlineBeamSpot = cms.InputTag("")
+triggerStudyBase_EMuPFBtagDeepCSV.electronColl = cms.InputTag("slimmedElectrons")
+triggerStudyBase_EMuPFBtagDeepCSV.conversions = cms.InputTag("reducedEgamma:reducedConversions")
+#        cutBasedElectronID-Fall17-94X-V2-medium
+triggerStudyBase_EMuPFBtagDeepCSV.electronIdMap = cms.InputTag("egmGsfElectronIDs:cutBasedElectronID-Fall17-94X-V2-medium")
+triggerStudyBase_EMuPFBtagDeepCSV.muonColl = cms.InputTag("slimmedMuons")
+triggerStudyBase_EMuPFBtagDeepCSV.metColl = cms.InputTag("slimmedMETs")
+
+
+from CMSSWTools.TrigTools.TurnOns_Ht330_4j_3b_2018 import  triggerConfigL1Unprescaled_Ht330_4j_3b
+from CMSSWTools.TrigTools.TurnOns_2b116_2018       import triggerConfigL1Unprescaled_2b116
 
 
 hltSeeds = [("",     cms.vstring()), 
-            ("EMu",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v")),
-            ("EMuDiJet30",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_v")),
+            ("PreSelEMu_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v")),
+            ("PreSelEMu2j30_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_v")),
             #("HT250",cms.vstring("HLT_PFHT250_v")),
             ]
 
@@ -306,13 +333,21 @@ hltSeeds = [("",     cms.vstring()),
 # HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_v
 
 
-L1Seeds_EMuPFBtagDeepCSV = [("HLTOnly",       triggerConfig_EMuPFBtagDeepCSV),
-]
+L1Seeds_EMuPFBtagDeepCSV = [("HLT_EMu",                     triggerConfig_EMuPFBtagDeepCSV, True),
+                            ("HLT_Ht330_4j_3b",       triggerConfigL1Unprescaled_Ht330_4j_3b, False),
+                            ("HLT_2b116",                  triggerConfigL1Unprescaled_2b116, False),
+                        ]
 
-offlinePreSelection = [("",             cms.PSet()),
-                       ("Pass2Jet",     cms.PSet(minNSelJet = cms.uint32(2))),
-                       ("Pass2Tag",     cms.PSet(minNSelJet = cms.uint32(2),
-                                                 minNTagTightJet = cms.uint32(2))), 
+offlinePreSelection = [("",             cms.PSet(minNSelMuon = cms.uint32(0)), False),
+
+                       ("_offEMu",      cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1)), True),
+
+                       ("_offEmu2Jet",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                 minNSelJet = cms.uint32(2)), True),
+
+                       ("_offEmu2Tag",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                 minNSelJet = cms.uint32(2),
+                                                 minNTagJet = cms.uint32(2)),True), 
                    ]
 
 process.analyzerSeq = cms.Sequence( )
@@ -329,6 +364,7 @@ for h in hltSeeds:
         
         offName = o[0]
         offPreSelection = o[1]
+        doJetTurnOns = o[2]
 
         #
         #   EMU
@@ -339,13 +375,19 @@ for h in hltSeeds:
 
             hltPreSelection = h[1]
             filtersToPass = l[1]
+            doJetTurnOnsL1 = l[2]
 
             triggerStudyConfigured = triggerStudyBase_EMuPFBtagDeepCSV.clone()
             triggerStudyConfigured.filtersToPass = filtersToPass
             triggerStudyConfigured.offlinePreSelection = offPreSelection
             triggerStudyConfigured.hltPreSelection = hltPreSelection
-
             fullName = "triggerStudy_EMuPFBtagDeepCSV_"+hltName+l1Name+offName
+
+            if not doJetTurnOns or not doJetTurnOnsL1:
+                print "Turning off jet turn ons for selection ",fullName
+                triggerStudyConfigured.jetTurnOns = cms.VPSet()
+
+
 
             setattr(process,fullName,triggerStudyConfigured)
             process.analyzerSeq *= getattr(process,fullName)
@@ -354,96 +396,7 @@ for h in hltSeeds:
 
 
 
-#
-#process.triggerStudy = cms.EDAnalyzer("TriggerStudy",           
-#                                      hltPreSelection = cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v"),
-#                                      offlinePreSelection = cms.PSet(),
-#                                      isBBMC = cms.bool(False),
-#                                      isMC = cms.bool(options.isMC),
-#                                      testL1 = cms.bool(False),
-#                                      trigObjs = cms.InputTag("slimmedPatTrigger"),
-#                                      trigResults = cms.InputTag("TriggerResults","","HLT"),
-#                                      filtersToPass = cms.VPSet(  # Not really Needed bc we have the input trigger
-#
-#                                          cms.PSet(filterName = cms.string("hltL1sMu5EG23IorMu5IsoEG20IorMu7EG23IorMu7IsoEG20IorMuIso7EG23"),
-#                                                   histName = cms.string("L1"),
-#                                                   mult = cms.uint32(1),
-#                                                   pt = cms.double(-1.0)),
-#
-#                                          cms.PSet(filterName = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-#                                                   histName = cms.string("L1"),
-#                                                   mult = cms.uint32(1),
-#                                                   pt = cms.double(-1.0)),
-#
-#                                          cms.PSet(filterName = cms.string("hltPFJetFilterTwoC30"),
-#                                                   histName = cms.string("2PF30"),
-#                                                   mult = cms.uint32(2),
-#                                                   pt = cms.double(30)),
-#
-#                                      ), 
-#
-#                                      jetTurnOns = cms.VPSet(
-#                                          cms.PSet(numFilterMatch = cms.string("hltCaloJetFilterTwoC30"),
-#                                                   histName = cms.string("Calo30"),
-#                                               ),
-#
-#                                          cms.PSet(histName = cms.string("Calo30Test"),
-#                                                   numPtCut = cms.double(30.),
-#                                                   numPtName = cms.string("hltCaloJetFilterTwoC30"),
-#                                               ),
-#
-#                                          cms.PSet(histName = cms.string("Calo30Test2"),
-#                                                   numPtCut = cms.double(30.),
-#                                                   numPtName = cms.string("hltCaloJetFilterTwoC30"),
-#                                                   tagFilterMatch = cms.string("hltCaloJetFilterTwoC30"),
-#                                               ),
-#
-#                                          
-#                                          cms.PSet(histName = cms.string("PF30"),
-#                                                   numPtCut = cms.double(30.),
-#                                                   numPtName = cms.string("hltPFJetFilterTwoC30"),
-#                                               ),
-#
-#                                          cms.PSet(histName = cms.string("PF75"),
-#                                                   numPtCut = cms.double(75.),
-#                                                   numPtName = cms.string("hltPFJetFilterTwoC30"),
-#                                               ),
-#
-#                                          cms.PSet(histName = cms.string("PF60"),
-#                                                   numPtCut = cms.double(60.),
-#                                                   numPtName = cms.string("hltPFJetFilterTwoC30"),
-#                                               ),
-#
-#                                          cms.PSet(histName = cms.string("PF45"),
-#                                                   numPtCut = cms.double(45.),
-#                                                   numPtName = cms.string("hltPFJetFilterTwoC30"),
-#                                               ),
-#
-#                                          cms.PSet(histName = cms.string("PF40"),
-#                                                   numPtCut = cms.double(40.),
-#                                                   numPtName = cms.string("hltPFJetFilterTwoC30"),
-#                                               ),
-#                                      ),
-#                                      pathsToPass = cms.vstring(),
-#                                      jets = cms.InputTag("slimmedJets"),
-#                                      L1Jets = cms.InputTag("caloStage2Digis","Jet"),
-#                                      truthJets = cms.InputTag("slimmedGenJets"),
-#                                      truthParts = cms.InputTag("prunedGenParticles"),
-#                                      AlgInputTag = cms.InputTag("gtStage2Digis"),
-#                                      ExtInputTag = cms.InputTag("gtStage2Digis"),
-#                                  )
-#
-#
-#process.triggerStudyPassNJet = process.triggerStudy.clone()
-#process.triggerStudyPassNJet.offlinePreSelection = cms.PSet(minNSelJet = cms.uint32(2))
-#
-#
-#process.triggerStudyPassPreSelMed = process.triggerStudy.clone()
-#process.triggerStudyPassPreSelMed.offlinePreSelection = cms.PSet(minNSelJet = cms.uint32(2),
-#                                                                 minNTagMedJet = cms.uint32(2))
-#
-#
-#process.p = cms.Path(process.triggerStudy + process.triggerStudyPassNJet + process.triggerStudyPassPreSelMed)
+
 
 
 # initialize MessageLogger and output report
