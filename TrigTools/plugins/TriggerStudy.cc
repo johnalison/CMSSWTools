@@ -1026,7 +1026,7 @@ void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHand
       //  Require tag to match a HLT filter (Matches on the "away side" dR > 0.4)
       // 
       if(jetTurnOnInfo.exists("tagFilterMatch")){
-	passDenominator = tagJetFilterMatch(jetTurnOnInfo, jetsHandle, trigObjsUnpacked, eta, phi);
+	passDenominator = (passDenominator && tagJetFilterMatch(jetTurnOnInfo, jetsHandle, trigObjsUnpacked, eta, phi));
       }// tagFilterMatch
 
 
@@ -1034,7 +1034,7 @@ void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHand
       //  Require tag to pass cuts (Matches on the "near side" dR < 0.4)
       // 
       if(jetTurnOnInfo.exists("tagCut")){
-	passDenominator = tagJetCut(jetTurnOnInfo, jetsHandle, eta, phi);
+	passDenominator = (passDenominator && tagJetCut(jetTurnOnInfo, jetsHandle, eta, phi));
       }// tagCut
 
 
@@ -1042,7 +1042,7 @@ void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHand
       //  Require tag (Matches on the "near side" dR < 0.4)
       // 
       if(jetTurnOnInfo.exists("probeCut")){
-	passDenominator = probeJetCut(jetTurnOnInfo, jetsHandle, jet);
+	passDenominator = (passDenominator && probeJetCut(jetTurnOnInfo, jetsHandle, jet));
       }// probeCut
 
       //
@@ -1277,10 +1277,15 @@ void TriggerStudy::getSelectedJets(edm::Handle<edm::View<pat::Jet> > jetsHandle)
     
     if(pt<30) continue;
     thisEvent.hT30+=pt;
+
+    bool passJetID = CMSSWTools::passJetID(&jet);
     
+    if(passJetID) thisEvent.hT30_jetID +=pt;
+
     if(pt < 40) continue;
     thisEvent.hT+=pt;
 
+    if(passJetID) thisEvent.hT_jetID +=pt;
     
     // Add overlapp removal
     bool passOverlap = true;
@@ -1303,6 +1308,10 @@ void TriggerStudy::getSelectedJets(edm::Handle<edm::View<pat::Jet> > jetsHandle)
     }
 
     if(!passOverlap) continue;
+
+
+    thisEvent.hT_noLep +=pt;
+    if(passJetID) thisEvent.hT_jetID_noLep +=pt;
 
     thisEvent.jet_pts.push_back(pt);
     thisEvent.selJets.push_back(&jet);

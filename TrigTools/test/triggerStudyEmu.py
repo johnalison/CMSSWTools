@@ -85,7 +85,9 @@ if options.isMC:
     )
 else:
     process.source = cms.Source("PoolSource",
-                                fileNames = cms.untracked.vstring("/store/data/Run2018D/MuonEG/MINIAOD/12Nov2019_UL2018_rsb-v1/20000/003E1A62-7AB4-7741-98E8-CE6A66AD68DA.root")
+                                #fileNames = cms.untracked.vstring("/store/data/Run2018D/MuonEG/MINIAOD/12Nov2019_UL2018_rsb-v1/20000/003E1A62-7AB4-7741-98E8-CE6A66AD68DA.root")
+                                fileNames = cms.untracked.vstring("/store/data/Run2018B/MuonEG/MINIAOD/UL2018_MiniAODv2-v1/30000/2FEA8B87-4A57-1948-B119-8FF1B6682F1A.root")
+
     )
 
 
@@ -325,7 +327,7 @@ from CMSSWTools.TrigTools.TurnOns_2b116_2018       import triggerConfigL1Unpresc
 
 hltSeeds = [("",     cms.vstring()), 
             ("PreSelEMu_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v")),
-            ("PreSelEMu2j30_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_v")),
+            #("PreSelEMu2j30_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_v")),
             #("HT250",cms.vstring("HLT_PFHT250_v")),
             ]
 
@@ -391,6 +393,8 @@ for h in hltSeeds:
 
             setattr(process,fullName,triggerStudyConfigured)
             process.analyzerSeq *= getattr(process,fullName)
+
+
 
 
 

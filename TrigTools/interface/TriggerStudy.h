@@ -71,7 +71,12 @@ namespace CMSSWTools {
       vector<const pat::Electron*> allElecs;
 
       float hT = 0;
+      float hT_noLep = 0;
+      float hT_jetID = 0;
+      float hT_jetID_noLep = 0;
+
       float hT30 = 0;
+      float hT30_jetID = 0;
 
       float mBB  = -1;
       float pTBB = -1;
@@ -100,7 +105,13 @@ namespace CMSSWTools {
 	allElecs.clear();
   
 	hT = 0;
+	hT_noLep = 0;
+	hT_jetID = 0;
+	hT_jetID_noLep = 0;
+
 	hT30 = 0;
+	hT30_jetID = 0;
+
 
 	mBB  = -1;
 	pTBB = -1;
@@ -318,11 +329,29 @@ namespace CMSSWTools {
       TH1F* h_nSelElecs = nullptr;
       TH1F* h_nAllElecs = nullptr;
 
+      //TH1F* h_hT_s     = nullptr;    
       TH1F* h_hT       = nullptr;    
+      TH1F* h_hT_l     = nullptr;    
+
+      //TH1F* h_hT_noLep_s     = nullptr;    
+      TH1F* h_hT_noLep       = nullptr;    
+      TH1F* h_hT_noLep_l     = nullptr;    
+
+      //TH1F* h_hT_jetID_s     = nullptr;    
+      TH1F* h_hT_jetID       = nullptr;    
+      TH1F* h_hT_jetID_l     = nullptr;    
+
+      //TH1F* h_hT_jetID_noLep_s     = nullptr;    
+      TH1F* h_hT_jetID_noLep       = nullptr;    
+      TH1F* h_hT_jetID_noLep_l     = nullptr;    
+
+      //TH1F* h_hT30_s   = nullptr;    
       TH1F* h_hT30     = nullptr;    
-      TH1F* h_hT_s     = nullptr;    
-      TH1F* h_hT30_s   = nullptr;    
       TH1F* h_hT30_l   = nullptr;    
+
+      //TH1F* h_hT30_jetID_s   = nullptr;    
+      TH1F* h_hT30_jetID     = nullptr;    
+      TH1F* h_hT30_jetID_l   = nullptr;    
 
       TH1F* h_met       = nullptr;    
 
@@ -353,9 +382,25 @@ namespace CMSSWTools {
 	h_nAllElecs = fs->make<TH1F>( ("nAllElecs_"+cutName).c_str()  , "PreSelected Elec Multiplicity",  10,  -0.5, 9.5 );
 
 	h_nTagJets = fs->make<TH1F>( ("nTagJet_"+cutName).c_str()  , "Tag Jet Multiplicity",  16,  -0.5, 15.5 );
+
 	h_hT       = fs->make<TH1F>( ("hT_"+cutName).c_str()  , "hT",  200,  0, 1000 );
+	h_hT_l     = fs->make<TH1F>( ("hT_l_"+cutName).c_str()  , "hT",  200,  0, 1000 );
+
+	h_hT_noLep       = fs->make<TH1F>( ("hT_noLep_"+cutName).c_str()  , "hT",  200,  0, 1000 );
+	h_hT_noLep_l     = fs->make<TH1F>( ("hT_noLep_l_"+cutName).c_str()  , "hT",  200,  0, 1000 );
+
+	h_hT_jetID       = fs->make<TH1F>( ("hT_jetID_"+cutName).c_str()  , "hT",  200,  0, 1000 );
+	h_hT_jetID_l     = fs->make<TH1F>( ("hT_jetID_l_"+cutName).c_str()  , "hT",  200,  0, 1000 );
+
+	h_hT_jetID_noLep       = fs->make<TH1F>( ("hT_jetID_noLep_"+cutName).c_str()  , "hT",  200,  0, 1000 );
+	h_hT_jetID_noLep_l     = fs->make<TH1F>( ("hT_jetID_noLep_l_"+cutName).c_str()  , "hT",  200,  0, 1000 );
+
 	h_hT30     = fs->make<TH1F>( ("hT30_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 1000 );
 	h_hT30_l   = fs->make<TH1F>( ("hT30_l_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 2000 );
+
+	h_hT30_jetID     = fs->make<TH1F>( ("hT30_jetID_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 1000 );
+	h_hT30_jetID_l   = fs->make<TH1F>( ("hT30_jetID_l_"+cutName).c_str()  , "hT (jets pt > 30 GeV)",  200,  0, 2000 );
+
 
 	h_met       = fs->make<TH1F>( ("MeT_"+cutName).c_str()  , "MeT",  200,  0, 1000 );      
 
@@ -399,9 +444,22 @@ namespace CMSSWTools {
 	h_nSelElecs ->Fill(thisEvent.selElecs.size(), weight);
 	h_nAllElecs ->Fill(thisEvent.allElecs.size(), weight);
 
-	h_hT       ->Fill(thisEvent.hT,   weight);
-	h_hT30     ->Fill(thisEvent.hT30, weight);
-	h_hT30_l   ->Fill(thisEvent.hT30, weight);
+	h_hT               ->Fill(thisEvent.hT                  , weight);
+	h_hT_l     	   ->Fill(thisEvent.hT                  , weight);
+	h_hT_noLep   	   ->Fill(thisEvent.hT_noLep            , weight);
+	h_hT_noLep_l 	   ->Fill(thisEvent.hT_noLep            , weight);
+	h_hT_jetID     	   ->Fill(thisEvent.hT_jetID            , weight);
+	h_hT_jetID_l   	   ->Fill(thisEvent.hT_jetID            , weight);
+	h_hT_jetID_noLep   ->Fill(thisEvent.hT_jetID_noLep      , weight);
+	h_hT_jetID_noLep_l ->Fill(thisEvent.hT_jetID_noLep      , weight);
+
+	h_hT30             ->Fill(thisEvent.hT30                 , weight);
+	h_hT30_l   	   ->Fill(thisEvent.hT30                 , weight);
+	h_hT30_jetID  	   ->Fill(thisEvent.hT30_jetID            , weight);
+	h_hT30_jetID_l     ->Fill(thisEvent.hT30_jetID            , weight);
+
+
+
 
 	h_met       ->Fill(thisEvent.met->pt(),   weight);
 

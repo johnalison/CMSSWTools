@@ -1,291 +1,120 @@
 import FWCore.ParameterSet.Config as cms
 
+def addTurnOn(pt, matchBtag=False, isCalo=False):
+    turnOn = cms.PSet()
+    
+    histName = "PF"+str(pt)
+    if isCalo: histName = "Calo"+str(pt)
+
+    if matchBtag:
+        histName += "MatchBtag"
+    histName += "TandP"
+
+    jetFilter = "hltPFJetFilterTwoC30"
+    if isCalo: jetFilter = "hltCaloJetFilterTwoC30"
+
+    turnOn.histName = cms.string(histName)
+    turnOn.denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter")
+    turnOn.numPtCut = cms.double(float(pt))
+    turnOn.numPtName = cms.string(jetFilter)
+    turnOn.tagCut = cms.string("Btag")
+    turnOn.tagFilterMatch = cms.string(jetFilter)
+    turnOn.tagFilterMin = cms.uint32(1)
+    
+    if matchBtag:
+        turnOn.probeCut = cms.string("Btag")
+
+    return turnOn
+
+
+def addBTagTurnOn(matchBtag=False, isCalo=False, isTrueB=False):
+    turnOn = cms.PSet()
+    
+    histName = "PFDeepCSV"
+    if isCalo: histName = "CaloDeepCSV"
+
+    if matchBtag:
+        histName += "MatchBtag"
+
+    if isTrueB:
+        histName += "TrueB"
+
+    histName += "TandP"
+
+
+    numFilter       = "hltBTagPFDeepCSV1p5Single"
+    denJetMatch    = "hltPFJetFilterTwoC30"
+    if isCalo: 
+        numFilter = "hltBTagCaloDeepCSV1p5Single"
+        denJetMatch = "hltCaloJetFilterTwoC30"
+
+
+    turnOn.histName = cms.string(histName)
+    turnOn.numFilterMatch = cms.string(numFilter)
+    turnOn.denJetMatch    = cms.string(denJetMatch)
+    turnOn.tagCut = cms.string("Btag")
+    
+    
+    
+    if matchBtag:
+        turnOn.probeCut = cms.string("Btag")
+        if isTrueB: turnOn.probeCut = cms.string("trueBBtag")
+    elif isTrueB:
+        turnOn.probeCut = cms.string("trueB")
+
+    return turnOn
+
+
+
+
+
+
 #
 #  Jet trigger turn ons
 #
-jetTurnOnConfig = cms.VPSet(
+jetTurnOnConfig = cms.VPSet()
 
-    cms.PSet(numFilterMatch = cms.string("hltPFJetFilterTwoC30"),
-             histName = cms.string("PF30"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-         ),
+#
+#  PF 30
+#
+for pfPt in [30,40,45,60,75,116]:
+    jetTurnOnConfig.append(addTurnOn(pfPt))
+    jetTurnOnConfig.append(addTurnOn(pfPt, matchBtag=True))
 
 
-    #
-    #  PF 30
-    #
-    cms.PSet(histName = cms.string("PF30TandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(30.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
+#
+#  Calo 30
+#
+for caloPt in [30,100]:
+    jetTurnOnConfig.append(addTurnOn(caloPt, isCalo=True))
+    jetTurnOnConfig.append(addTurnOn(caloPt, isCalo=True, matchBtag=True))
 
-    cms.PSet(histName = cms.string("PF30MatchBtagTandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(30.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-             probeCut = cms.string("Btag"),
-         ),
 
 
-    #
-    #  Calo 30
-    #
-    cms.PSet(histName = cms.string("Calo30TandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(30.),
-             numPtName = cms.string("hltCaloJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
+#
+#  PF BTags
+#
+jetTurnOnConfig.append(addBTagTurnOn())
+jetTurnOnConfig.append(addBTagTurnOn(matchBtag=True))
 
-    cms.PSet(histName = cms.string("Calo30MatchBtagTandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(30.),
-             numPtName = cms.string("hltCaloJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-             probeCut = cms.string("Btag"),
-         ),
 
+#
+# Calo BTags
+#
+jetTurnOnConfig.append(addBTagTurnOn(isCalo=True))
+jetTurnOnConfig.append(addBTagTurnOn(isCalo=True, matchBtag=True))
 
+#
+#  MC True
+#
+jetTurnOnConfig.append(addBTagTurnOn(isTrueB=True))
+jetTurnOnConfig.append(addBTagTurnOn(isTrueB=True, matchBtag=True))
+jetTurnOnConfig.append(addBTagTurnOn(isTrueB=True, isCalo=True))
+jetTurnOnConfig.append(addBTagTurnOn(isTrueB=True, isCalo=True, matchBtag=True))
 
-    #
-    #  PF 40
-    #
-    cms.PSet(histName = cms.string("PF40TandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(40.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
 
-    cms.PSet(histName = cms.string("PF40MatchBtagTandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(40.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-             probeCut = cms.string("Btag"),
-         ),
-
-
-
-
-    #
-    #  PF 45
-    #
-    cms.PSet(histName = cms.string("PF45TandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(45.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
-
-    cms.PSet(histName = cms.string("PF45MatchBtagTandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(45.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-             probeCut = cms.string("Btag"),
-         ),
-
-
-
-
-
-    #
-    # PF 60
-    #
-    cms.PSet(histName = cms.string("PF60TandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(60.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
-
-    cms.PSet(histName = cms.string("PF60MatchBtagTandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(60.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-             probeCut = cms.string("Btag"),
-         ),
-
-    
-    #
-    # PF 75
-    #
-    cms.PSet(histName = cms.string("PF75TandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(75.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
-
-    cms.PSet(histName = cms.string("PF75MatchBtagTandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(75.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-             probeCut = cms.string("Btag"),
-         ),
-
-
-
-    #
-    #  Calo 100
-    #
-    cms.PSet(histName = cms.string("Calo100TandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(100.),
-             numPtName = cms.string("hltCaloJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
-
-    cms.PSet(histName = cms.string("Calo100MatchBtagTandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(100.),
-             numPtName = cms.string("hltCaloJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-             probeCut = cms.string("Btag"),
-         ),
-
-
-
-    #
-    #  PF 116
-    #
-    cms.PSet(histName = cms.string("PF116TandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(116.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
-
-    cms.PSet(histName = cms.string("PF116MatchBtagTandP"),
-             denEventFilter = cms.string("hltMu8TrkIsoVVLEle23CaloIdLTrackIdLIsoVLDZFilter"),
-             numPtCut = cms.double(116.),
-             numPtName = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
-
-
-
-
-    #
-    #  The PF BTags
-    #
-    cms.PSet(histName = cms.string("PFDeepCSV"),
-             numFilterMatch = cms.string("hltBTagPFDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltPFJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltPFJetFilterTwoC30"),
-         ),
-
-
-    cms.PSet(histName = cms.string("PFDeepCSVTandP"),
-             numFilterMatch = cms.string("hltBTagPFDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltPFJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltPFJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
-
-
-    cms.PSet(histName = cms.string("PFDeepCSVMatchBtag"),
-             numFilterMatch = cms.string("hltBTagPFDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltPFJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltPFJetFilterTwoC30"),
-             probeCut = cms.string("Btag"),
-         ),
-
-
-    cms.PSet(histName = cms.string("PFDeepCSVMatchBtagTandP"),
-             numFilterMatch = cms.string("hltBTagPFDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltPFJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltPFJetFilterTwoC30"),
-             probeCut = cms.string("Btag"),
-             tagCut = cms.string("Btag"),
-         ),
-
-
-    #
-    #  The Calo BTags
-    #
-    cms.PSet(histName = cms.string("CaloDeepCSV"),
-             numFilterMatch = cms.string("hltBTagCaloDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltCaloJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltCaloJetFilterTwoC30"),
-         ),
-
-
-    cms.PSet(histName = cms.string("CaloDeepCSVTandP"),
-             numFilterMatch = cms.string("hltBTagCaloDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltCaloJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltCaloJetFilterTwoC30"),
-             tagCut = cms.string("Btag"),
-         ),
-
-
-    cms.PSet(histName = cms.string("CaloDeepCSVMatchBtag"),
-             numFilterMatch = cms.string("hltBTagCaloDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltCaloJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltCaloJetFilterTwoC30"),
-             probeCut = cms.string("Btag"),
-         ),
-
-
-    cms.PSet(histName = cms.string("CaloDeepCSVMatchBtagTandP"),
-             numFilterMatch = cms.string("hltBTagCaloDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltCaloJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltCaloJetFilterTwoC30"),
-             probeCut = cms.string("Btag"),
-             tagCut = cms.string("Btag"),
-         ),
-
-
-
-    #
-    #  For PF MC
-    #
-    cms.PSet(histName = cms.string("PFDeepCSVMatchTrueB"),
-             numFilterMatch = cms.string("hltBTagPFDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltPFJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltPFJetFilterTwoC30"),
-             probeCut = cms.string("trueB"),
-         ),
-
-
-    cms.PSet(histName = cms.string("PFDeepCSVMatchTrueBtag"),
-             numFilterMatch = cms.string("hltBTagPFDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltPFJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltPFJetFilterTwoC30"),
-             probeCut = cms.string("trueBtag"),
-         ),
-
-
-    
-    #
-    #  For Calo MC
-    #
-    cms.PSet(histName = cms.string("CaloDeepCSVMatchTrueB"),
-             numFilterMatch = cms.string("hltBTagCaloDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltCaloJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltCaloJetFilterTwoC30"),
-             probeCut = cms.string("trueB"),
-         ),
-
-
-    cms.PSet(histName = cms.string("CaloDeepCSVMatchTrueBtag"),
-             numFilterMatch = cms.string("hltBTagCaloDeepCSV1p5Single"),
-             #denEventFilter = cms.string("hltCaloJetFilterTwoC30"),
-             denJetMatch    = cms.string("hltCaloJetFilterTwoC30"),
-             probeCut = cms.string("trueBtag"),
-         ),
-
-
-
-
-
-    )
+#print "jetTurnOnConfig is" 
+#print jetTurnOnConfig.dumpPython()
 
 
 

@@ -123,6 +123,11 @@ def main():
         if args.outLFNDirBase and not args.outLFNDirBase.isspace(): 
           config.Data.outLFNDirBase = os.path.join(args.outLFNDirBase,args.version)
         config.Data.outputDatasetTag = cond
+
+        # Debugging
+        #config.Site.whitelist = ['T2_CH_*', 'T2_UK_*', 'T2_IT_*', 'T2_US_*']
+
+
         print('Submitting {config.General.requestName} dataset =  {job}'.format(**locals()))
         print('Configuration :')
         print(config)
