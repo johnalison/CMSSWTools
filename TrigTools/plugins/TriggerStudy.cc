@@ -77,20 +77,20 @@ namespace{
     return matchedObjs;
   }
 
-  //void printAllFilters(const float eta,const float phi,const vector<pat::TriggerObjectStandAlone>& trigObjs,const float maxDeltaR=0.1)
-  //{
-  //  const auto matchedObjs = getMatchedObjs(eta,phi,trigObjs,maxDeltaR);
-  //  for(const auto trigObj : matchedObjs){
-  //
-  //    //normally would auto this but to make it clearer for the example
-  //    const vector<string>& objFilters = trigObj->filterLabels();
-  //	
-  //    for(const string& s : objFilters){
-  //	cout << " \t\t matched Filter is " << s << endl;
-  //    }
-  //  }
-  //  return;
-  //}
+  void printAllFilters(const float eta,const float phi,const vector<pat::TriggerObjectStandAlone>& trigObjs,const float maxDeltaR=0.1)
+  {
+    const auto matchedObjs = getMatchedObjs(eta,phi,trigObjs,maxDeltaR);
+    for(const auto trigObj : matchedObjs){
+  
+      //normally would auto this but to make it clearer for the example
+      const vector<string>& objFilters = trigObj->filterLabels();
+  	
+      for(const string& s : objFilters){
+  	cout << " \t\t matched Filter is " << s << endl;
+      }
+    }
+    return;
+  }
 
 
   /*
@@ -954,7 +954,11 @@ void TriggerStudy::setEventLevelHLTFilterDecisions(const std::vector<bool>& L1wo
       unsigned int mult = filterInfo.getParameter<unsigned int>("mult");
       double pt = filterInfo.getParameter<double>("pt");
       vector<const pat::TriggerObjectStandAlone*> releventTrigObs = getAllTrigObjs(trigObjsUnpacked, name);
-    
+
+
+      //if(name == "hltL1sQuadJetC50to60IorHTT280to500IorHTT250to340QuadJet"){
+      //	cout << "Checking " << name << " size is " << releventTrigObs.size() << endl;
+      //}
     
       if(mult > 0 && releventTrigObs.size() < mult){
 	//if(releventTrigObs.size() > 0) cout << name << " Fails with size " << releventTrigObs.size() << endl;
@@ -970,10 +974,56 @@ void TriggerStudy::setEventLevelHLTFilterDecisions(const std::vector<bool>& L1wo
 	if(!passPt) passFilter = false;
       }
     } // HLT Selection
+
+
+
+    //
+    //  HLT Selection
+    //
+    if(filterInfo.exists("filterNamesOR")){
+      name = filterInfo.getParameter<string>("histName");
+      vector<string> hltFilterNames = filterInfo.getParameter<vector<string> >("filterNamesOR");
+
+      unsigned int mult = filterInfo.getParameter<unsigned int>("mult");
+      double pt = filterInfo.getParameter<double>("pt");
+      
+      bool passFilterOR = false;
+
+      for(const string& hltFilter: hltFilterNames){
+	
+	bool passThisFilter = true;
+	vector<const pat::TriggerObjectStandAlone*> releventTrigObs = getAllTrigObjs(trigObjsUnpacked, hltFilter);
+
+	if(mult > 0 && releventTrigObs.size() < mult){
+	  //if(releventTrigObs.size() > 0) cout << name << " Fails with size " << releventTrigObs.size() << endl;
+	  passThisFilter = false;
+	}
+    
+	if(pt   > 0){
+	  bool passPt = false;
+	  for(auto& trigObj : releventTrigObs){
+	    if(trigObj->pt() > pt) passPt = true;
+	  }
+          
+	  if(!passPt) passThisFilter = false;
+	}
+
+	if(passThisFilter) passFilterOR = true;
+
+      }//hltFilterNames
+
+      if(!passFilterOR) passFilter = false;
+    }// filterNamesOR
+
     
     
+    //if(name == "hltL1sQuadJetC50to60IorHTT280to500IorHTT250to340QuadJet"){
+    //  cout << name << " passed ?  " << passFilter << endl;
+    //}
     
+
     //filtersPassed.push_back(foundFilter(filter,trigObjsUnpacked));
+    //cout << "FiltersPassed adding " << name << " with decision " << passFilter << endl;
     filterNames .push_back(name);
     filterPassed.push_back(passFilter);
   }
@@ -1005,12 +1055,26 @@ void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHand
       ++turnOnNum;
 
       bool passDenominator = true;
+      
+      bool debugJetTurnOn = false;
+      //if(jetTurnOnInfo.getParameter<string>("histName") == "CaloCSVinMJ2b100TandP") debugJetTurnOn = true;
+
+      if(debugJetTurnOn)
+	cout << "\t denEventFilter is " << jetTurnOnInfo.getParameter<string>("denEventFilter") << endl;
 
       //
       //  Require event filter passed (if requested)
       //
       if(jetTurnOnInfo.exists("denEventFilter")){
 	passDenominator = checkDenEventFilter(jetTurnOnInfo, filterNames, filterPassed);
+	if(debugJetTurnOn){
+	  cout << "\t pass checkDenEventFilter  " << passDenominator << endl; //" pass L1" << checkEventFilter("hltL1DoubleJet100er2p3dEtaMax1p6", filterNames, filterPassed) << endl;
+	  if(passDenominator){
+	    cout << "printAllFilters  passDenominator " << passDenominator<< endl;
+	    printAllFilters(eta,phi,trigObjsUnpacked);
+	  }
+	}
+
       }//denFilter
 
 
@@ -1051,6 +1115,10 @@ void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHand
       if(!passDenominator){
 	continue;
       }
+
+      if(debugJetTurnOn)
+	cout << "\t passDenominator  " << passDenominator << endl;
+
 
       // 
       // Fill the denominator
@@ -1110,9 +1178,16 @@ bool TriggerStudy::checkDenEventFilter(const edm::ParameterSet& jetTurnOnInfo, c
 
   string denName  = jetTurnOnInfo.getParameter<string>("denEventFilter");
 
-  vector<string>::const_iterator itr = std::find(filterNames.begin(), filterNames.end(), denName);
+  return checkEventFilter(denName, filterNames, filterPassed);
+
+}//checkDenEventFilter
+
+
+bool TriggerStudy::checkEventFilter(const string& targetName, const vector<string>& filterNames, const vector<bool>& filterPassed){
+
+  vector<string>::const_iterator itr = std::find(filterNames.begin(), filterNames.end(), targetName);
   if(itr == filterNames.end()){
-    cout << "ERROR denEventFilter " << denName << " not found in filterNames  " << endl;
+    cout << "ERROR denEventFilter " << targetName << " not found in filterNames  " << endl;
     return false;
   }
 
@@ -1125,8 +1200,8 @@ bool TriggerStudy::checkDenEventFilter(const edm::ParameterSet& jetTurnOnInfo, c
 
   
   return true;
-}//checkDenEventFilter
 
+}
 
 
 bool TriggerStudy::tagJetFilterMatch(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, float probeEta, float probePhi ){

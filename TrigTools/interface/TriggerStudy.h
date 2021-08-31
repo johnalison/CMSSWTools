@@ -358,7 +358,7 @@ namespace CMSSWTools {
       jetHists* h_selJets = nullptr;
       jetHists* h_tagJets = nullptr;
       jetHists* h_leadJet = nullptr;
-      //jetHists* h_sublJet = nullptr;
+      jetHists* h_sublJet = nullptr;
       jetHists* h_leadTag = nullptr;
       //jetHists* h_sublTag = nullptr;
 
@@ -407,7 +407,7 @@ namespace CMSSWTools {
 	TFileDirectory selJetsDir = fs->mkdir( "selJets" );
 	TFileDirectory tagJetsDir = fs->mkdir( "tagJets" );
 	TFileDirectory leadJetDir = fs->mkdir( "leadJet" );
-	//TFileDirectory sublJetDir = fs->mkdir( "sublJet" );
+	TFileDirectory sublJetDir = fs->mkdir( "sublJet" );
 	TFileDirectory leadTagDir = fs->mkdir( "leadTag" );
 	//TFileDirectory sublTagDir = fs->mkdir( "sublTag" );
 
@@ -421,7 +421,7 @@ namespace CMSSWTools {
 	h_selJets = new jetHists(selJetsDir, "_"+cutName);
 	h_tagJets = new jetHists(tagJetsDir, "_"+cutName);
 	h_leadJet = new jetHists(leadJetDir, "_"+cutName);
-	//h_sublJet = new jetHists(sublJetDir, "_"+cutName);
+	h_sublJet = new jetHists(sublJetDir, "_"+cutName);
 	h_leadTag = new jetHists(leadTagDir, "_"+cutName);
 	//h_sublTag = new jetHists(sublTagDir, "_"+cutName);
 
@@ -490,7 +490,7 @@ namespace CMSSWTools {
 
 
 	if(thisEvent.selJets.size() > 0) h_leadJet->Fill(thisEvent.selJets.at(0), weight);
-	//if(selJets.size() > 1) h_sublJet->Fill(selJets.at(1), weight);
+	if(thisEvent.selJets.size() > 1) h_sublJet->Fill(thisEvent.selJets.at(1), weight);
 
 	if(thisEvent.tagJets.size() > 0) h_leadTag->Fill(thisEvent.tagJets.at(0), weight);
 	//if(tagJets.size() > 1) h_sublTag->Fill(tagJets.at(1), weight);
@@ -520,6 +520,7 @@ namespace CMSSWTools {
 
     void fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, const vector<string>& filterNames, const vector<bool>& filterPassed);
     bool checkDenEventFilter(const edm::ParameterSet& jetTurnOnInfo, const vector<string>& filterNames, const vector<bool>& filterPassed);
+    bool checkEventFilter   (const string& targetName, const vector<string>& filterNames, const vector<bool>& filterPassed);
     bool tagJetFilterMatch(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, float probeEta, float probePhi);
     bool tagJetCut(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, float probeEta, float probePhi);
     bool probeJetCut(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const pat::Jet& jet);

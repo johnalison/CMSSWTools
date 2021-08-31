@@ -3,7 +3,12 @@ import FWCore.ParameterSet.Config as cms
 
 
 #L1Name = "hltL1sQuadJetC50to60IorHTT280to500IorHTT250to340QuadJet"
-L1Name = "hltL1sQuadJetC60IorHTT380IorHTT280QuadJetIorHTT300QuadJet" # Data ?
+#L1Name = "hltL1sQuadJetC60IorHTT380IorHTT280QuadJetIorHTT300QuadJet" # Data ?
+L1Name  = "hltL1sQuadJetC50to60IorHTT280to500IorHTT250to340QuadJet" # MC
+#L1NameMiniAOD = "hltL1sQuadJetC60IorHTT380IorHTT280QuadJetIorHTT300QuadJet"
+L1Name2017C = "hltL1sQuadJetC60IorHTT380IorHTT280QuadJetIorHTT300QuadJet"
+
+
 
 #
 #  Jet trigger turn ons
@@ -11,7 +16,7 @@ L1Name = "hltL1sQuadJetC60IorHTT380IorHTT280QuadJetIorHTT300QuadJet" # Data ?
 jetTurnOnConfig = cms.VPSet(
     cms.PSet(numFilterMatch = cms.string("hltQuadCentralJet30"),
              histName = cms.string("Calo30"),
-             denEventFilter = cms.string(L1Name),
+             denEventFilter = cms.string("L1ORAll"),
          ),
 
     cms.PSet(numFilterMatch = cms.string("hltBTagCaloCSVp05Double"), 
@@ -167,11 +172,11 @@ jetTurnOnConfig = cms.VPSet(
 #
 triggerConfig_Ht300_4j_3b = cms.VPSet(
 
-    cms.PSet(filterName = cms.string(L1Name),
+    cms.PSet(filterNamesOR = cms.vstring(L1Name,L1Name2017C),
              histName = cms.string("L1ORAll"),
              mult = cms.uint32(1),
              pt = cms.double(-1.0)),
-
+   
     cms.PSet(filterName = cms.string("hltQuadCentralJet30"),
              histName = cms.string("4Calo30"),
              mult = cms.uint32(4),
@@ -227,15 +232,22 @@ triggerConfig_Ht300_4j_3b = cms.VPSet(
 #
 #  L1 Requirements
 #
+def make_triggerConfigL1Unprescaled_L1_Ht300_4j_3b(isMC=False):
+    if isMC:
+        L1Names = cms.vstring( "L1_QuadJet60er2p7", "L1_HTT380er", "L1_HTT280er_QuadJet_70_55_40_35_er2p5")
+    else:
+        L1Names = cms.vstring( "L1_QuadJet60er3p0", "L1_HTT380er", "L1_HTT280er_QuadJet_70_55_40_35_er2p5")
+    return cms.VPSet(cms.PSet(L1Names = L1Names,
+                              histName = cms.string("passL1"),
+                              mult = cms.uint32(1),
+                              pt = cms.double(-1.0))
+    )
 
-triggerConfigL1Unprescaled_L1_Ht300_4j_3b = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_QuadJet60er3p0", "L1_HTT380er", "L1_HTT280er_QuadJet_70_55_40_35_er2p5"),
-                                                               histName = cms.string("passL1"),
-                                                               mult = cms.uint32(1),
-                                                               pt = cms.double(-1.0))
-                                   )
-triggerConfigL1Unprescaled_Ht300_4j_3b = triggerConfigL1Unprescaled_L1_Ht300_4j_3b.copy()
-triggerConfigL1Unprescaled_Ht300_4j_3b.extend(triggerConfig_Ht300_4j_3b)
-
+def make_triggerConfigL1Unprescaled_Ht300_4j_3b(isMC=False):
+    triggerConfigL1Unprescaled_L1_Ht300_4j_3b = make_triggerConfigL1Unprescaled_L1_Ht300_4j_3b(isMC)
+    triggerConfigL1Unprescaled_Ht300_4j_3b = triggerConfigL1Unprescaled_L1_Ht300_4j_3b.copy()
+    triggerConfigL1Unprescaled_Ht300_4j_3b.extend(triggerConfig_Ht300_4j_3b)
+    return triggerConfigL1Unprescaled_Ht300_4j_3b
 
 
 

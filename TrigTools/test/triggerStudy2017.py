@@ -75,14 +75,19 @@ process.maxEvents = cms.untracked.PSet(
 #
 #  TurnOns for HT330 + 4j + 3b
 #
-from CMSSWTools.TrigTools.TurnOns_Ht300_4j_3b_2017 import triggerConfig_Ht300_4j_3b, triggerConfigL1Unprescaled_Ht300_4j_3b, triggerStudyBase_Ht300_4j_3b
+from CMSSWTools.TrigTools.TurnOns_Ht300_4j_3b_2017 import triggerConfig_Ht300_4j_3b, make_triggerConfigL1Unprescaled_Ht300_4j_3b, triggerStudyBase_Ht300_4j_3b
+triggerConfigL1Unprescaled_Ht300_4j_3b = make_triggerConfigL1Unprescaled_Ht300_4j_3b(options.isMC)
 triggerStudyBase_Ht300_4j_3b.isMC = cms.bool(options.isMC)
 triggerStudyBase_Ht300_4j_3b.isBBMC = cms.bool(options.isMC)
 
 #
 #  TurnOns for 2b
 #
-from CMSSWTools.TrigTools.TurnOns_2b100_2017 import triggerConfig_2b100, triggerConfigL1Unprescaled_2b100, triggerStudyBase_2b100
+from CMSSWTools.TrigTools.TurnOns_2b100_2017 import make_triggerConfig_2b100, make_triggerConfigL1Unprescaled_2b100, make_triggerStudyBase_2b100
+triggerConfig_2b100 = make_triggerConfig_2b100(options.isMC)
+triggerStudyBase_2b100 = make_triggerStudyBase_2b100(options.isMC)
+triggerConfigL1Unprescaled_2b100 = make_triggerConfigL1Unprescaled_2b100(options.isMC)
+
 triggerStudyBase_2b100.isMC = cms.bool(options.isMC)
 triggerStudyBase_2b100.isBBMC = cms.bool(options.isMC)
 
