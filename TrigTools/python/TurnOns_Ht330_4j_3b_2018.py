@@ -222,23 +222,23 @@ triggerConfig_Ht330_4j_3b = cms.VPSet(
 #
 #  L1 Requirements
 #
-#triggerConfigL1HTQuadJet = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_HTT320er_QuadJet_70_55_40_40_er2p4"),
-#                                                histName = cms.string("passL1"),
-#                                                mult = cms.uint32(1),
-#                                                pt = cms.double(-1.0))
-#                                   )
-#triggerConfigL1HTQuadJetHLT = triggerConfigL1HTQuadJet.copy()
-#triggerConfigL1HTQuadJetHLT.extend(triggerConfigHLT)
-#
-#triggerConfigL1HT = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_HTT360er"),
-#                                       histName = cms.string("passL1"),
-#                                       mult = cms.uint32(1),
-#                                       pt = cms.double(-1.0)),
-#                                     )
-#triggerConfigL1HTHLT = triggerConfigL1HT.copy()
-#triggerConfigL1HTHLT.extend(triggerConfigHLT)
-#
-#
+triggerConfigL1HTQuadJet_L1_Ht330_4j_3b = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_HTT320er_QuadJet_70_55_40_40_er2p4"),
+                                                histName = cms.string("passL1"),
+                                                mult = cms.uint32(1),
+                                                pt = cms.double(-1.0))
+                                   )
+triggerConfigL1HTQuadJet_Ht330_4j_3b = triggerConfigL1HTQuadJet_L1_Ht330_4j_3b.copy()
+triggerConfigL1HTQuadJet_Ht330_4j_3b.extend(triggerConfig_Ht330_4j_3b)
+
+triggerConfigL1HT_L1_Ht330_4j_3b = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_HTT360er"),
+                                                      histName = cms.string("passL1"),
+                                                      mult = cms.uint32(1),
+                                                      pt = cms.double(-1.0)),
+)
+triggerConfigL1HT_Ht330_4j_3b = triggerConfigL1HT_L1_Ht330_4j_3b.copy()
+triggerConfigL1HT_Ht330_4j_3b.extend(triggerConfig_Ht330_4j_3b)
+
+
 #triggerConfigL1HTQuadJetOrHT = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_HTT320er_QuadJet_70_55_40_40_er2p4","L1_HTT360er"),
 #                                                  histName = cms.string("passL1"),
 #                                                  mult = cms.uint32(1),
@@ -256,23 +256,6 @@ triggerConfigL1Unprescaled_L1_Ht330_4j_3b = cms.VPSet(cms.PSet(L1Names = cms.vst
 triggerConfigL1Unprescaled_Ht330_4j_3b = triggerConfigL1Unprescaled_L1_Ht330_4j_3b.copy()
 triggerConfigL1Unprescaled_Ht330_4j_3b.extend(triggerConfig_Ht330_4j_3b)
 
-
-#triggerConfigL1HTT120 = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_HTT120er"),
-#                                             histName = cms.string("passL1"),
-#                                             mult = cms.uint32(1),
-#                                             pt = cms.double(-1.0))
-#                                )
-#triggerConfigL1HTT120HLT = triggerConfigL1HTT120.copy()
-#triggerConfigL1HTT120HLT.extend(triggerConfigHLT)
-#
-#
-#triggerConfigL1HTT160 = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_HTT160er"),
-#                                             histName = cms.string("passL1"),
-#                                             mult = cms.uint32(1),
-#                                             pt = cms.double(-1.0))
-#                                )
-#triggerConfigL1HTT160HLT = triggerConfigL1HTT160.copy()
-#triggerConfigL1HTT160HLT.extend(triggerConfigHLT)
 
 
 

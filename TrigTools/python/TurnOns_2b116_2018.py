@@ -187,9 +187,7 @@ triggerConfig_2b116 = cms.VPSet(
 #
 #  L1 Requirements
 #
-
-
-triggerConfigL1Unprescaled_L1_2b116 = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_DoubleJet112er2p3_dEta_Max1p6", "L1_DoubleJet150er2p5"),
+triggerConfigL1Unprescaled_L1_2b116 = cms.VPSet(cms.PSet(L1Names = cms.vstring("L1_DoubleJet112er2p3_dEta_Max1p6"),
                                                          histName = cms.string("passL1"),
                                                          mult = cms.uint32(1),
                                                          pt = cms.double(-1.0))

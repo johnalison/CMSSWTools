@@ -36,6 +36,35 @@ def addTurnOn(pt, matchBtag=False, isCalo=False, useMultiJet=False):
 
 
 
+def add2b112L1TurnOn(matchBtag=False, doMaxDEta=False):
+    turnOn = cms.PSet()
+    
+    histName = "L12b112"
+    histName += "inMJ"
+    if doMaxDEta: histName += "maxDEta"
+
+    if matchBtag:
+        histName += "MatchBtag"
+    histName += "TandP"
+
+    jetFilter = "hltL1DoubleJet112er2p3dEtaMax1p6"
+
+    turnOn.histName = cms.string(histName)
+    turnOn.numFilterMatch = cms.string(jetFilter)
+
+    turnOn.tagCut = cms.string("Btag")
+    turnOn.tagFilterMatch = cms.string(jetFilter)
+    turnOn.tagFilterMin = cms.uint32(1)
+
+    if doMaxDEta: turnOn.tagFilterMaxDEta = cms.double(1.6)
+            
+    if matchBtag:
+        turnOn.probeCut = cms.string("Btag")
+
+    return turnOn
+
+
+
 
 def addBTagTurnOn(matchBtag=False, isCalo=False, isTrueB=False, useMultiJet=False, is2b116=False):
     turnOn = cms.PSet()
@@ -127,6 +156,12 @@ for caloPt in [30,100]:
     jetTurnOnConfig.append(addTurnOn(caloPt, isCalo=True, matchBtag=True, useMultiJet=True))
 
 
+
+jetTurnOnConfig.append(add2b112L1TurnOn())
+jetTurnOnConfig.append(add2b112L1TurnOn(matchBtag=True))
+
+jetTurnOnConfig.append(add2b112L1TurnOn(doMaxDEta = True ))
+jetTurnOnConfig.append(add2b112L1TurnOn(doMaxDEta = True, matchBtag=True))
 
 
 

@@ -55,30 +55,6 @@ print "globalTag is ",globalTag
 process.GlobalTag.globaltag = globalTag
 
 
-#process.source = cms.Source("PoolSource",
-#                            fileNames = cms.untracked.vstring(
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/120000/69F49A13-5100-DB4B-B809-4016B4C2A3CB.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/120000/87D6FC74-37A0-C146-98D7-8E23CB2463F4.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/120000/C8EAC210-E31B-9F42-9EBF-F375332BFF54.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/120000/F44FB500-F597-1846-A69F-A4310D8D19A5.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/05A59850-A677-7745-A857-923FAA4BE576.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/0AD42490-4CFB-CD47-A118-32A0D3CBF1D1.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/1956C4D0-2BA5-B944-83EA-9A4FC65ED28F.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/2C1CFF50-20D4-AC4E-B5E1-30B054C0EEBB.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/2EBBF75F-C820-F748-9724-E5D59D297A8A.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/51E46B16-1244-CD4B-9578-DD2F7EE1A692.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/588D08C9-01F5-B242-94C1-22CC22653CF3.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/6549C57A-9BB3-BC48-8934-91341B645B14.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/73F78F97-2F64-9E4C-92D9-632A66115DE9.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/8133FADB-3C25-9F4A-90B5-451EFF03E0F7.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/8CB939AC-D800-0A40-BA71-A5A1B2B3D8CB.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/C2B5D5A3-934B-6349-850B-5B0476828189.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/E63B4433-2800-5541-B059-A442F07C9E6C.root",
-#                                "/store/mc/RunIIAutumn18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/270000/EB958EC5-03E8-7F4F-9F4D-9A926C4B3EE4.root",
-#                            )
-#                        )
-#process.TFileService = cms.Service("TFileService", fileName = cms.string (options.outputFile))
-
 if options.isMC:
     process.source = cms.Source("PoolSource",
                                 fileNames = cms.untracked.vstring("/store/mc/RunIISummer20UL18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/10000/DEB42E22-D25F-4B45-BB61-2E76E94A678E.root")
@@ -323,7 +299,7 @@ triggerStudyBase_EMuPFBtagDeepCSV.muonColl = cms.InputTag("slimmedMuons")
 triggerStudyBase_EMuPFBtagDeepCSV.metColl = cms.InputTag("slimmedMETs")
 
 
-from CMSSWTools.TrigTools.TurnOns_Ht330_4j_3b_2018 import  triggerConfigL1Unprescaled_Ht330_4j_3b
+from CMSSWTools.TrigTools.TurnOns_Ht330_4j_3b_2018 import triggerConfigL1Unprescaled_Ht330_4j_3b, triggerConfig_Ht330_4j_3b, triggerConfigL1HTQuadJet_Ht330_4j_3b, triggerConfigL1HT_Ht330_4j_3b
 from CMSSWTools.TrigTools.TurnOns_2b116_2018       import triggerConfigL1Unprescaled_2b116
 
 
@@ -337,8 +313,11 @@ hltSeeds = [("",     cms.vstring()),
 # HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_v
 
 
-L1Seeds_EMuPFBtagDeepCSV = [("HLT_EMu",                     triggerConfig_EMuPFBtagDeepCSV, True),
-                            ("HLT_Ht330_4j_3b",       triggerConfigL1Unprescaled_Ht330_4j_3b, False),
+L1Seeds_EMuPFBtagDeepCSV = [("HLT_EMu",                    triggerConfig_EMuPFBtagDeepCSV, True),
+                            ("HLT_Ht330_4j_3b",            triggerConfigL1Unprescaled_Ht330_4j_3b, False),
+                            ("HLT_Ht330_4j_3b_L1OR",       triggerConfig_Ht330_4j_3b, False),
+                            ("HLT_Ht330_4j_3b_L1HT",       triggerConfigL1HT_Ht330_4j_3b, False),
+                            ("HLT_Ht330_4j_3b_L1HTQuadJet",triggerConfigL1HTQuadJet_Ht330_4j_3b, False),
                             ("HLT_2b116",                  triggerConfigL1Unprescaled_2b116, False),
                         ]
 
