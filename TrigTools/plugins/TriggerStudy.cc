@@ -3,6 +3,7 @@
 
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -337,22 +338,28 @@ void TriggerStudy::beginJob()
 
 
 
-void TriggerStudy::beginRun(edm::Run const&, edm::EventSetup const& evSetup){
+void TriggerStudy::beginRun(edm::Run const& evRun, edm::EventSetup const& evSetup){
   
   L1Names_.clear();
   L1Indices_.clear();
+
+  bool printL1TrigNames = false;
 
   edm::ESHandle<L1TUtmTriggerMenu> menu;
   evSetup.get<L1TUtmTriggerMenuRcd>().get(menu);
   auto const& mapping = menu->getAlgorithmMap();
   unsigned int L1NamePos = 0;
+  if(printL1TrigNames){
+    cout << "Getting L1 mapping" << endl;
+    cout << "  Run: " << evRun.run() << endl;
+  }
   for (auto const& keyval : mapping) {
     std::string name = keyval.first;
     unsigned int index = keyval.second.getIndex();
     L1Names_.push_back(name);
     L1Indices_.push_back(index);
     L1_NamesToPos.insert(std::pair<std::string, unsigned int>(name, L1NamePos));
-    //cout << "name " << keyval.first << " index " << keyval.second.getIndex() << endl;
+    if(printL1TrigNames) cout << "name " << keyval.first << " index " << keyval.second.getIndex() << endl;
     ++L1NamePos;
   }
 
@@ -1057,10 +1064,16 @@ void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHand
       bool passDenominator = true;
       
       bool debugJetTurnOn = false;
-      //if(jetTurnOnInfo.getParameter<string>("histName") == "CaloCSVinMJ2b100TandP") debugJetTurnOn = true;
+      //cout << "Hist names is " << jetTurnOnInfo.getParameter<string>("histName") << endl;
+      //if(jetTurnOnInfo.getParameter<string>("histName") == "L12b100inMJTandP") debugJetTurnOn = true;
+      
 
-      if(debugJetTurnOn)
-	cout << "\t denEventFilter is " << jetTurnOnInfo.getParameter<string>("denEventFilter") << endl;
+      if(debugJetTurnOn) cout << " jet pt is " << jet.pt() << endl;
+
+      if(debugJetTurnOn){
+	//	cout << "\t denEventFilter is " << jetTurnOnInfo.getParameter<string>("denEventFilter") << endl;
+	cout << "\t jetFilter is " << jetTurnOnInfo.getParameter<string>("tagFilterMatch") << endl;
+      }
 
       //
       //  Require event filter passed (if requested)
@@ -1090,7 +1103,15 @@ void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHand
       //  Require tag to match a HLT filter (Matches on the "away side" dR > 0.4)
       // 
       if(jetTurnOnInfo.exists("tagFilterMatch")){
-	passDenominator = (passDenominator && tagJetFilterMatch(jetTurnOnInfo, jetsHandle, trigObjsUnpacked, eta, phi));
+	passDenominator = (passDenominator && tagJetFilterMatch(jetTurnOnInfo, jetsHandle, trigObjsUnpacked, eta, phi, debugJetTurnOn));
+	if(debugJetTurnOn && passDenominator){
+	  cout << "printAllFilters  passDenominator " << passDenominator<< endl;
+	  printAllFilters(eta,phi,trigObjsUnpacked);
+	}
+
+	//if(debugJetTurnOn){
+	//  cout << "\t passDenominator " << passDenominator << endl;
+	//}
       }// tagFilterMatch
 
 
@@ -1124,9 +1145,11 @@ void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHand
       // Fill the denominator
       // 
       hJets_den.at(turnOnNum).Fill(&jet);
-      if(jet.pt() > 100) hJets_den_pt100.at(turnOnNum).Fill(&jet);
-      if(passJetID(&jet)) hJets_den_jetID.at(turnOnNum).Fill(&jet);
-	  
+      
+      if(passJetID(&jet)){
+	hJets_den_jetID.at(turnOnNum).Fill(&jet);
+	if(jet.pt() > 100) hJets_den_pt100.at(turnOnNum).Fill(&jet);	  
+      }
 
       // 
       // Now the numerator cuts
@@ -1163,8 +1186,11 @@ void TriggerStudy::fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHand
       //
       if(passNumerator){
 	hJets_num.at(turnOnNum).Fill(&jet);
-	if(jet.pt() > 100) hJets_num_pt100.at(turnOnNum).Fill(&jet);
-	if(passJetID(&jet)) hJets_num_jetID.at(turnOnNum).Fill(&jet);
+	if(passJetID(&jet)){
+	  hJets_num_jetID.at(turnOnNum).Fill(&jet);
+	  if(jet.pt() > 100) hJets_num_pt100.at(turnOnNum).Fill(&jet);
+	}
+
 
       }
 
@@ -1204,10 +1230,14 @@ bool TriggerStudy::checkEventFilter(const string& targetName, const vector<strin
 }
 
 
-bool TriggerStudy::tagJetFilterMatch(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, float probeEta, float probePhi ){
-
+bool TriggerStudy::tagJetFilterMatch(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, float probeEta, float probePhi, bool debug ){
+ 
   string tagName  = jetTurnOnInfo.getParameter<string>("tagFilterMatch");	
   unsigned int    tagMin   = jetTurnOnInfo.getParameter<unsigned int>("tagFilterMin");	
+  double tagMaxDEta   = 1000;
+  if(jetTurnOnInfo.exists("tagFilterMaxDEta")) tagMaxDEta   = jetTurnOnInfo.getParameter<double>("tagFilterMaxDEta");	
+    
+
 
   // Loop on jets{
   unsigned int nTags = 0;
@@ -1224,11 +1254,17 @@ bool TriggerStudy::tagJetFilterMatch(const edm::ParameterSet& jetTurnOnInfo, edm
     if(dR2 < dR2min) 
       continue;
 
+    float dEta = fabs(probeEta - etaTag);
+    if(dEta > tagMaxDEta)
+      continue;
+
     if(checkFilter(etaTag,phiTag,trigObjsUnpacked,tagName))
       nTags++;
 
   }
 	
+  if(debug) cout << "tagJetFilterMatch have nTags " << nTags << endl;
+
   if(nTags < tagMin){
     //cout << "Fail probe"<< endl;
     return false;

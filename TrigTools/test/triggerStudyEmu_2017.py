@@ -59,8 +59,9 @@ if options.isMC:
 else:
     process.source = cms.Source("PoolSource",
                                 #fileNames = cms.untracked.vstring("/store/data/Run2017D/MuonEG/MINIAOD/UL2017_MiniAODv2-v1/40000/0AB92508-42C1-F846-9E1A-C08D7723D524.root")
-                                fileNames = cms.untracked.vstring("/store/data/Run2017C/MuonEG/MINIAOD/UL2017_MiniAODv2-v1/270000/B3F441B2-2BB4-BA40-A330-B666FFF54C99.root")
+                                #fileNames = cms.untracked.vstring("/store/data/Run2017C/MuonEG/MINIAOD/UL2017_MiniAODv2-v1/270000/B3F441B2-2BB4-BA40-A330-B666FFF54C99.root")
                                 #fileNames = cms.untracked.vstring("/store/data/Run2017B/MuonEG/MINIAOD/UL2017_MiniAODv2-v1/280000/A5DB9C96-2B5A-C646-82D1-4E368013D08A.root")
+                                fileNames = cms.untracked.vstring("/store/data/Run2017F/MuonEG/MINIAOD/UL2017_MiniAODv2-v1/280000/5AE51815-0529-D44D-A85A-16DC45B44075.root")
 
                                 
     )
@@ -296,11 +297,11 @@ triggerStudyBase_EMuPFBtagDeepCSV.muonColl = cms.InputTag("slimmedMuons")
 triggerStudyBase_EMuPFBtagDeepCSV.metColl = cms.InputTag("slimmedMETs")
 
 
-from CMSSWTools.TrigTools.TurnOns_Ht300_4j_3b_2017 import make_triggerConfigL1Unprescaled_Ht300_4j_3b
+from CMSSWTools.TrigTools.TurnOns_Ht300_4j_3b_2017 import make_triggerConfigL1Unprescaled_Ht300_4j_3b, triggerConfig_Ht300_4j_3b
 triggerConfigL1Unprescaled_Ht300_4j_3b = make_triggerConfigL1Unprescaled_Ht300_4j_3b(options.isMC)
 
-from CMSSWTools.TrigTools.TurnOns_2b100_2017       import make_triggerConfigL1Unprescaled_2b100
-triggerConfigL1Unprescaled_2b100 = make_triggerConfigL1Unprescaled_2b100(options.isMC)
+from CMSSWTools.TrigTools.TurnOns_2b100_2017       import triggerConfigL1Unprescaled_2b100
+
 
 hltSeeds = [("",     cms.vstring()), 
             ("PreSelEMu_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v")),
@@ -311,7 +312,8 @@ hltSeeds = [("",     cms.vstring()),
 
 
 L1Seeds_EMuPFBtagDeepCSV = [("HLT_EMu",                     triggerConfig_EMuPFBtagDeepCSV, True),
-                            ("HLT_Ht300_4j_3b",       triggerConfigL1Unprescaled_Ht300_4j_3b, False),
+                            ("HLT_Ht300_4j_3b",            triggerConfigL1Unprescaled_Ht300_4j_3b, False),
+                            ("HLT_Ht300_4j_3b_L1OR",       triggerConfig_Ht300_4j_3b, False),
                             ("HLT_2b100",                  triggerConfigL1Unprescaled_2b100, False),
                         ]
 
@@ -327,7 +329,6 @@ offlinePreSelection = [("",             cms.PSet(minNSelMuon = cms.uint32(0)), F
                                                  minNSelJet = cms.uint32(2),
                                                  minNTagJet = cms.uint32(2)),True), 
                    ]
-
 
 
 

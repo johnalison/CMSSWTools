@@ -2,29 +2,25 @@ import FWCore.ParameterSet.Config as cms
 
          #hltL1DoubleJet100er2p3dEtaMax1p6Ior112er2p3dEtaMax1p6
 L1NameMC = "hltL1DoubleJet100er2p3dEtaMax1p6Ior112er2p3dEtaMax1p6" # MC 
-L1Name   = "hltL1DoubleJet100er2p3dEtaMax1p6" # DAta
+L1Name   = "hltL1DoubleJet100er2p3dEtaMax1p6*" # DAta
 
 #
 #  Jet trigger turn ons
 #
-def make_jetTurnOnConfig(isMC=False):
-
-    thisL1 = L1NameMC if isMC else L1Name
-
-    return cms.VPSet(
-        cms.PSet(numFilterMatch = cms.string(thisL1),
+jetTurnOnConfig =  cms.VPSet(
+        cms.PSet(numFilterMatch = cms.string(L1Name),
              histName = cms.string("L1100"),
          ),
 
-    cms.PSet(numFilterMatch = cms.string(thisL1),
+    cms.PSet(numFilterMatch = cms.string(L1Name),
              histName = cms.string("L1100DenMatch"),
              denEventFilter = cms.string("hltDoubleCaloBJets100eta2p3"), 
          ),
 
-    cms.PSet(numFilterMatch = cms.string(thisL1),
+    cms.PSet(numFilterMatch = cms.string(L1Name),
              histName = cms.string("L1100TandP"),
-             denEventFilter = cms.string(thisL1),
-             tagFilterMatch = cms.string(thisL1),
+             denEventFilter = cms.string(L1Name),
+             tagFilterMatch = cms.string(L1Name),
              tagFilterMin = cms.uint32(2)
          ),
 
@@ -37,11 +33,11 @@ def make_jetTurnOnConfig(isMC=False):
          ),
     
 
-    cms.PSet(numFilterMatch = cms.string(thisL1),
+    cms.PSet(numFilterMatch = cms.string(L1Name),
              histName = cms.string("L1100TandPDenMatch"),
-             denEventFilter = cms.string(thisL1),
+             denEventFilter = cms.string(L1Name),
              denJetMatch = cms.string("hltL1sSingleJet60"),
-             tagFilterMatch = cms.string(thisL1),
+             tagFilterMatch = cms.string(L1Name),
              tagFilterMin = cms.uint32(2)
          ),
 
@@ -51,13 +47,13 @@ def make_jetTurnOnConfig(isMC=False):
     #
     cms.PSet(numFilterMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
              histName = cms.string("Calo100"),
-             denEventFilter = cms.string(thisL1),
+             denEventFilter = cms.string(L1Name),
          ),
 
     cms.PSet(numFilterMatch = cms.string("hltDoubleCaloBJets100eta2p3"),
              histName = cms.string("Calo100DenMatch"),
-             denEventFilter = cms.string(thisL1),
-             denJetMatch = cms.string(thisL1),
+             denEventFilter = cms.string(L1Name),
+             denJetMatch = cms.string(L1Name),
          ),
 
 
@@ -140,23 +136,18 @@ def make_jetTurnOnConfig(isMC=False):
 
 
 
-    )
+)
 
 
 
 #
 #   The HLT part of the trigger path (the L1 is added below)
 #
-def make_triggerConfig_2b100(isMC=False):
-
-    thisL1 = L1NameMC if isMC else L1Name
-
-    return cms.VPSet(
-        cms.PSet(filterName = cms.string(thisL1),
-                 histName = cms.string("L1ORAll"),
-                 mult = cms.uint32(1),
-                 pt = cms.double(-1.0)),
-    
+triggerConfig_2b100 =  cms.VPSet(
+    cms.PSet(filterNamesOR = cms.vstring(L1Name,L1NameMC),
+             histName = cms.string("L1ORAll"),
+             mult = cms.uint32(1),
+             pt = cms.double(-1.0)),
     
         cms.PSet(filterName = cms.string("hltDoubleCaloBJets100eta2p3"),
                  histName = cms.string("2Calo100"),
@@ -178,7 +169,7 @@ def make_triggerConfig_2b100(isMC=False):
                  mult = cms.uint32(1),
                  pt = cms.double(100)),
     
-    )
+)
 
 
 
@@ -191,33 +182,30 @@ triggerConfigL1Unprescaled_L1_2b100 = cms.VPSet(cms.PSet(L1Names = cms.vstring("
                                                          pt = cms.double(-1.0))
 )
 
-def make_triggerConfigL1Unprescaled_2b100(isMC=False):
-    triggerConfigL1Unprescaled_2b100 = triggerConfigL1Unprescaled_L1_2b100.copy()
-    triggerConfigL1Unprescaled_2b100.extend(make_triggerConfig_2b100(isMC))
-    return triggerConfigL1Unprescaled_2b100
 
+triggerConfigL1Unprescaled_2b100 = triggerConfigL1Unprescaled_L1_2b100.copy()
+triggerConfigL1Unprescaled_2b100.extend(triggerConfig_2b100)
 
 
 #
 #  Base config with the nominal options (customized below)
 #
-def make_triggerStudyBase_2b100(isMC=False):
-    triggerStudyBase_2b100 = cms.EDAnalyzer("TriggerStudy",           
-                                            isMC = cms.bool(False),
-                                            isBBMC = cms.bool(False),
-                                            testL1 = cms.bool(False),
-                                            doEmulation = cms.bool(False),
-                                            trigObjs = cms.InputTag("slimmedPatTrigger"),
-                                            trigResults = cms.InputTag("TriggerResults","","HLT"),
-                                            filtersToPass = cms.VPSet(),
-                                            triggersToPlot = cms.VPSet(),
-                                            jetTurnOns = make_jetTurnOnConfig(isMC),
-                                            hltPreSelection = cms.vstring(),
-                                            offlinePreSelection = cms.PSet(),
-                                            pathsToPass = cms.vstring(),
-                                            jets = cms.InputTag("slimmedJets"),
-                                            L1Jets = cms.InputTag("caloStage2Digis","Jet"),
-                                            truthJets = cms.InputTag("slimmedGenJets"),
-                                            truthParts = cms.InputTag("prunedGenParticles"),
-                                            AlgInputTag = cms.InputTag("gtStage2Digis"),
-    )
+triggerStudyBase_2b100 = cms.EDAnalyzer("TriggerStudy",           
+                                        isMC = cms.bool(False),
+                                        isBBMC = cms.bool(False),
+                                        testL1 = cms.bool(False),
+                                        doEmulation = cms.bool(False),
+                                        trigObjs = cms.InputTag("slimmedPatTrigger"),
+                                        trigResults = cms.InputTag("TriggerResults","","HLT"),
+                                        filtersToPass = cms.VPSet(),
+                                        triggersToPlot = cms.VPSet(),
+                                        jetTurnOns = jetTurnOnConfig,
+                                        hltPreSelection = cms.vstring(),
+                                        offlinePreSelection = cms.PSet(),
+                                        pathsToPass = cms.vstring(),
+                                        jets = cms.InputTag("slimmedJets"),
+                                        L1Jets = cms.InputTag("caloStage2Digis","Jet"),
+                                        truthJets = cms.InputTag("slimmedGenJets"),
+                                        truthParts = cms.InputTag("prunedGenParticles"),
+                                        AlgInputTag = cms.InputTag("gtStage2Digis"),
+)

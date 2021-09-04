@@ -4,7 +4,7 @@ import FWCore.ParameterSet.Config as cms
 
 #L1Name = "hltL1sQuadJetC50to60IorHTT280to500IorHTT250to340QuadJet"
 #L1Name = "hltL1sQuadJetC60IorHTT380IorHTT280QuadJetIorHTT300QuadJet" # Data ?
-L1Name  = "hltL1sQuadJetC50to60IorHTT280to500IorHTT250to340QuadJet" # MC
+L1Name       = "hltL1sQuadJetC50to60IorHTT280to500IorHTT250to340QuadJet" # MC
 #L1NameMiniAOD = "hltL1sQuadJetC60IorHTT380IorHTT280QuadJetIorHTT300QuadJet"
 L1Name2017C = "hltL1sQuadJetC60IorHTT380IorHTT280QuadJetIorHTT300QuadJet"
 

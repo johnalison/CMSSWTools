@@ -521,7 +521,7 @@ namespace CMSSWTools {
     void fillJetTurnOnPlots(edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, const vector<string>& filterNames, const vector<bool>& filterPassed);
     bool checkDenEventFilter(const edm::ParameterSet& jetTurnOnInfo, const vector<string>& filterNames, const vector<bool>& filterPassed);
     bool checkEventFilter   (const string& targetName, const vector<string>& filterNames, const vector<bool>& filterPassed);
-    bool tagJetFilterMatch(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, float probeEta, float probePhi);
+    bool tagJetFilterMatch(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const vector<pat::TriggerObjectStandAlone>& trigObjsUnpacked, float probeEta, float probePhi, bool debug = false);
     bool tagJetCut(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, float probeEta, float probePhi);
     bool probeJetCut(const edm::ParameterSet& jetTurnOnInfo, edm::Handle<edm::View<pat::Jet> > jetsHandle, const pat::Jet& jet);
 		     
