@@ -26,20 +26,14 @@ options.parseArguments()
 process = cms.Process("TriggerStudy")
 
 
-
-
 #
 #  Get the global Tag
 #
 if options.isMC:
-    #globalTag = "102X_upgrade2018_realistic_v15"
-    globalTag = "106X_upgrade2018_realistic_v16_L1v1"
+    globalTag = "106X_mcRun2_asymptotic_preVFP_v11"
 else:
-    #globalTag = "102X_upgrade2018_realistic_v21"
-    #globalTag = "102X_dataRun2_v14"
     globalTag = "106X_dataRun2_v35"
-    #106X_dataRun2_v33
-    #globalTag = "102X_dataRun2_Prompt_v6"
+
 if not options.globalTag is None:
     print "Overidding global tag with",options.globalTag
     globalTag = options.globalTag
@@ -55,17 +49,21 @@ print "globalTag is ",globalTag
 process.GlobalTag.globaltag = globalTag
 
 
+
 if options.isMC:
     process.source = cms.Source("PoolSource",
-                                fileNames = cms.untracked.vstring("/store/mc/RunIISummer20UL18MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/10000/DEB42E22-D25F-4B45-BB61-2E76E94A678E.root")
+                                fileNames = cms.untracked.vstring("/store/mc/RunIISummer20UL16MiniAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v17-v1/70000/DBC8BFD6-2878-A74B-99AF-0EFA7D7DE84D.root")
     )
 else:
     process.source = cms.Source("PoolSource",
-                                #fileNames = cms.untracked.vstring("/store/data/Run2018D/MuonEG/MINIAOD/12Nov2019_UL2018_rsb-v1/20000/003E1A62-7AB4-7741-98E8-CE6A66AD68DA.root")
-                                #fileNames = cms.untracked.vstring("/store/data/Run2018B/MuonEG/MINIAOD/UL2018_MiniAODv2-v1/30000/2FEA8B87-4A57-1948-B119-8FF1B6682F1A.root")
-                                fileNames = cms.untracked.vstring("/store/data/Run2018A/MuonEG/MINIAOD/UL2018_MiniAODv2-v1/30000/904042EA-9CDB-474A-9899-AA750746EAB4.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016B/MuonEG/MINIAOD/ver2_HIPM_UL2016_MiniAODv2-v2/140000/AA23D6D5-F70C-2046-A77E-BA77B387F8DD.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016C/MuonEG/MINIAOD/HIPM_UL2016_MiniAODv2-v2/120000/0B03BC72-1859-D446-99C7-21771DB8A704.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016D/MuonEG/MINIAOD/HIPM_UL2016_MiniAODv2-v2/280000/3AA0F7CA-9551-664F-9307-F97B1A53E594.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016E/MuonEG/MINIAOD/HIPM_UL2016_MiniAODv2-v2/270000/BDABA98F-CEC1-2346-9A06-2702BF3DE36D.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016F/MuonEG/MINIAOD/HIPM_UL2016_MiniAODv2-v2/280000/4287645F-FF43-0249-AF58-F0441618E525.root")
+                                fileNames = cms.untracked.vstring("/store/data/Run2016G/MuonEG/MINIAOD/UL2016_MiniAODv2-v2/280000/8E2B9D2B-948E-5143-AB8E-AB50E9B7032C.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016H/MuonEG/MINIAOD/UL2016_MiniAODv2-v2/270000/16B758EF-0116-BC4D-BD82-4337C45927FE.root") 
                                 
-
     )
 
 
@@ -286,7 +284,7 @@ for idmod in my_id_modules:
 #
 #  TurnOns for HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_PFBtagDeepCSV_1p5_v
 #
-from CMSSWTools.TrigTools.TurnOns_EMuPFBtagDeepCSV_2018 import triggerConfig_EMuPFBtagDeepCSV, triggerStudyBase_EMuPFBtagDeepCSV
+from CMSSWTools.TrigTools.TurnOns_EMuPFBtagDeepCSV_2016 import triggerConfig_EMuPFBtagDeepCSV, triggerStudyBase_EMuPFBtagDeepCSV
 triggerStudyBase_EMuPFBtagDeepCSV.isMC = cms.bool(options.isMC)
 triggerStudyBase_EMuPFBtagDeepCSV.jets = cms.InputTag(patJetSource)
 triggerStudyBase_EMuPFBtagDeepCSV.vtxColl = cms.InputTag("offlineSlimmedPrimaryVertices")
@@ -298,27 +296,24 @@ triggerStudyBase_EMuPFBtagDeepCSV.electronIdMap = cms.InputTag("egmGsfElectronID
 triggerStudyBase_EMuPFBtagDeepCSV.muonColl = cms.InputTag("slimmedMuons")
 triggerStudyBase_EMuPFBtagDeepCSV.metColl = cms.InputTag("slimmedMETs")
 
+from CMSSWTools.TrigTools.TurnOns_4j_3b_2016       import  triggerConfigL1Unprescaled_4j_3b, triggerConfig_4j_3b
+from CMSSWTools.TrigTools.TurnOns_2b100_2016       import  triggerConfigL1Unprescaled_2b100, triggerConfig_2b100
+from CMSSWTools.TrigTools.TurnOns_2j_2j_3b_2016    import  triggerConfigL1Unprescaled_2j_2j_3b, triggerConfig_2j_2j_3b
 
-from CMSSWTools.TrigTools.TurnOns_Ht330_4j_3b_2018 import triggerConfigL1Unprescaled_Ht330_4j_3b, triggerConfig_Ht330_4j_3b, triggerConfigL1HTQuadJet_Ht330_4j_3b, triggerConfigL1HT_Ht330_4j_3b
-from CMSSWTools.TrigTools.TurnOns_2b116_2018       import triggerConfigL1Unprescaled_2b116
-
-
-hltSeeds = [("",     cms.vstring()), 
-            ("PreSelEMu_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v")),
-            #("PreSelEMu2j30_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_v")),
-            #("HT250",cms.vstring("HLT_PFHT250_v")),
+hltSeeds = [("",     cms.vstring()),   
+            #("PreSelEMu_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v")),   # Not in: B C D E
+            ("PreSelEMu_noDZ",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v")),  # Not in: H
             ]
 
-# HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v"),
-# HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_PFDiJet30_v
 
-
-L1Seeds_EMuPFBtagDeepCSV = [("HLT_EMu",                    triggerConfig_EMuPFBtagDeepCSV, True),
-                            ("HLT_Ht330_4j_3b",            triggerConfigL1Unprescaled_Ht330_4j_3b, False),
-                            ("HLT_Ht330_4j_3b_L1OR",       triggerConfig_Ht330_4j_3b, False),
-                            ("HLT_Ht330_4j_3b_L1HT",       triggerConfigL1HT_Ht330_4j_3b, False),
-                            ("HLT_Ht330_4j_3b_L1HTQuadJet",triggerConfigL1HTQuadJet_Ht330_4j_3b, False),
-                            ("HLT_2b116",                  triggerConfigL1Unprescaled_2b116, False),
+L1Seeds_EMuPFBtagDeepCSV = [("HLT_EMu",                     triggerConfig_EMuPFBtagDeepCSV, True),
+                            ("HLT_4j_3b",                   triggerConfigL1Unprescaled_4j_3b, False),
+                            ("HLT_2b100",                   triggerConfigL1Unprescaled_2b100, False),
+                            ("HLT_2j_2j_3b",                triggerConfigL1Unprescaled_2j_2j_3b, False),
+                            ("HLT_4j_3b_L1OR",              triggerConfig_4j_3b, False),
+                            ("HLT_2b100_L1OR",              triggerConfig_2b100, False),
+                            ("HLT_2j_2j_3b_L1OR",           triggerConfig_2j_2j_3b, False),
+                            
                         ]
 
 offlinePreSelection = [("",             cms.PSet(minNSelMuon = cms.uint32(0)), False),
@@ -349,6 +344,8 @@ offlinePreSelection = [("",             cms.PSet(minNSelMuon = cms.uint32(0)), F
 
 
                    ]
+
+
 
 process.analyzerSeq = cms.Sequence( )
 #process.p = cms.Path()

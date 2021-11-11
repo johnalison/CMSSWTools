@@ -11,7 +11,7 @@ echo python submit_all.py \
   -p outputFile=hist_Data.root isMC=False \
   -o /store/user/johnda/hh4b/TriggerStudyEMu \
   -l Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt \
-  -v crab_Data2018MuonEg_inMJ
+  -v crab_Data2018MuonEg_16Sep
 
 echo "!!!! WARNING: Submitting for MC 2018!!!!"
 echo python submit_all.py \
@@ -20,12 +20,12 @@ echo python submit_all.py \
   -s T3_US_FNALLPC \
   -p outputFile=hist_MC_2018.root isMC=True  \
   -o /store/user/johnda/hh4b/TriggerStudyEMu \
-  -v crab_MC2018TT2L2Nu_inMJ
-
+  -v crab_MC2018TT2L2Nu_16Sep
 
 #
-#  2017
-#
+##
+##  2017
+##
 echo "!!!! WARNING: Submitting for Data 2017!!!!"
 echo python submit_all.py \
   triggerStudyEmu_2017.py \
@@ -34,7 +34,7 @@ echo python submit_all.py \
   -p outputFile=hist_Data.root isMC=False \
   -o /store/user/johnda/hh4b/TriggerStudyEMu \
   -l Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt \
-  -v crab_Data2017MuonEg_inMJ
+  -v crab_Data2017MuonEg_16Sep
 
 echo "!!!! WARNING: Submitting for MC 2017!!!!"
 echo python submit_all.py \
@@ -43,9 +43,22 @@ echo python submit_all.py \
   -s T3_US_FNALLPC \
   -p outputFile=hist_MC_2017.root isMC=True  \
   -o /store/user/johnda/hh4b/TriggerStudyEMu \
-  -v crab_MC2017TT2L2Nu_inMJ
+  -v crab_MC2017TT2L2Nu_16Sep
 
 
+
+#
+#  2016
+#
+echo "!!!! WARNING: Submitting for Data 2016!!!!"
+echo python submit_all.py \
+  triggerStudyEmu_2016_BE.py \
+  -f dataSets/data2016MuonEG_BE.txt \
+  -s T3_US_FNALLPC \
+  -p outputFile=hist_Data.root isMC=False \
+  -o /store/user/johnda/hh4b/TriggerStudyEMu \
+  -l Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt \
+  -v crab_Data2016MuonEg_16Sep
 
 #
 #  2016
@@ -58,7 +71,8 @@ echo python submit_all.py \
   -p outputFile=hist_Data.root isMC=False \
   -o /store/user/johnda/hh4b/TriggerStudyEMu \
   -l Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt \
-  -v crab_Data2016MuonEg_inMJ
+  -v crab_Data2016MuonEg_16Sep
+
 
 echo "!!!! WARNING: Submitting for MC 2016!!!!"
 echo python submit_all.py \
@@ -67,5 +81,5 @@ echo python submit_all.py \
   -s T3_US_FNALLPC \
   -p outputFile=hist_MC_2016.root isMC=True  \
   -o /store/user/johnda/hh4b/TriggerStudyEMu \
-  -v crab_MC2016TT2L2Nu_inMJ
+  -v crab_MC2016TT2L2Nu_16Sep
 

@@ -322,12 +322,29 @@ offlinePreSelection = [("",             cms.PSet(minNSelMuon = cms.uint32(0)), F
 
                        ("_offEMu",      cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1)), True),
 
-                       ("_offEmu2Jet",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                       ("_offEMu2Jet",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
                                                  minNSelJet = cms.uint32(2)), True),
 
-                       ("_offEmu2Tag",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                       ("_offEMu2Tag",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
                                                  minNSelJet = cms.uint32(2),
                                                  minNTagJet = cms.uint32(2)),True), 
+
+                       ("_offEMu3Jet",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                    minNSelJet = cms.uint32(3)), False),
+
+                       ("_offEMu3Jet2Tag",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                        minNSelJet = cms.uint32(3),
+                                                        minNTagJet = cms.uint32(2)), False),
+                                                    
+
+                       ("_offEMu4Jet",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                    minNSelJet = cms.uint32(4)), False),
+
+                       ("_offEMu4Jet2Tag",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                        minNSelJet = cms.uint32(4),
+                                                        minNTagJet = cms.uint32(2)), False),
+
+
                    ]
 
 

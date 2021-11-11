@@ -27,11 +27,39 @@ def addTurnOn(pt, matchBtag=False, isCalo=False):
     return turnOn
 
 
-def addBTagTurnOn(matchBtag=False, isTrueB=False):
+def addTurnOnFilterMatch(name, numFilter, denFilter, tagFilter, matchBtag=False):
+    turnOn = cms.PSet()
+    
+    histName = name
+    histName += "filter"
+
+    if matchBtag:
+        histName += "MatchBtag"
+
+    histName += "TandP"
+    
+    turnOn.histName = cms.string(histName)
+    turnOn.numFilterMatch = cms.string(numFilter)
+    turnOn.denEventFilter = cms.string(denFilter)
+
+    turnOn.tagCut = cms.string("Btag")
+    turnOn.tagFilterMatch = cms.string(tagFilter)
+    turnOn.tagFilterMin = cms.uint32(1)
+    
+    if matchBtag:
+        turnOn.probeCut = cms.string("Btag")
+
+    return turnOn
+
+
+
+def addBTagTurnOn(matchBtag=False, isTrueB=False, is2b100=False):
     turnOn = cms.PSet()
     
     histName = "CaloCSV"
     histName += "inMJ"
+
+    if is2b100: histName += "2b100"
 
     if matchBtag:
         histName += "MatchBtag"
@@ -41,9 +69,14 @@ def addBTagTurnOn(matchBtag=False, isTrueB=False):
 
     histName += "TandP"
 
-    numFilter = "hltBTagCaloCSVp087Triple"
-    denJetMatch = "hltQuadCentralJet45"
-    denEventFilter = "hltQuadCentralJet45"
+    if is2b100:
+        numFilter = "hltBTagCaloCSVp014DoubleWithMatching"
+        denJetMatch = "hltDoubleJetsC100"
+        denEventFilter = "hltDoubleJetsC100"
+    else:
+        numFilter = "hltBTagCaloCSVp087Triple"
+        denJetMatch = "hltQuadCentralJet45"
+        denEventFilter = "hltQuadCentralJet45"
 
     turnOn.histName = cms.string(histName)
     turnOn.numFilterMatch = cms.string(numFilter)
@@ -62,6 +95,32 @@ def addBTagTurnOn(matchBtag=False, isTrueB=False):
 
 
 
+def add2b100L1TurnOn(matchBtag=False):
+    turnOn = cms.PSet()
+    
+    histName = "L12b100"
+    histName += "inMJ"
+
+    if matchBtag:
+        histName += "MatchBtag"
+    histName += "TandP"
+
+    jetFilter = "hltL1sDoubleJetC100IorDoubleJetC112IorDoubleJetC120IorSingleJet200"
+
+    turnOn.histName = cms.string(histName)
+    turnOn.numFilterMatch = cms.string(jetFilter)
+
+    turnOn.tagCut = cms.string("Btag")
+    turnOn.tagFilterMatch = cms.string(jetFilter)
+    turnOn.tagFilterMin = cms.uint32(1)
+    
+    if matchBtag:
+        turnOn.probeCut = cms.string("Btag")
+
+    return turnOn
+
+
+
 
 
 
@@ -71,20 +130,48 @@ def addBTagTurnOn(matchBtag=False, isTrueB=False):
 jetTurnOnConfig = cms.VPSet()
 
 #
-#  PF 30
+#  PF 
 #
 for pfPt in [30,45,90,100]:
     jetTurnOnConfig.append(addTurnOn(pfPt))
     jetTurnOnConfig.append(addTurnOn(pfPt, matchBtag=True))
 
 
+
+for turnOnPair in [
+        # 4j_3b
+        ("Calo45",   "hltQuadCentralJet45",                 "hltL1sQuadJetC50IorQuadJetC60IorHTT280IorHTT300IorHTT320IorTripleJet846848VBFIorTripleJet887256VBFIorTripleJet927664VBF", "hltQuadCentralJet45"),
+        ("PF45",     "hltPFCentralJetLooseIDQuad30",        "hltBTagCaloCSVp087Triple"                               , "hltQuadCentralJet45"),
+
+        # 2b100
+        ("Calo100",  "hltDoubleJetsC100",              "hltL1sDoubleJetC100IorDoubleJetC112IorDoubleJetC120IorSingleJet200"   , "hltDoubleJetsC100"),
+        ("PF100",    "hltDoublePFJetsC100",            "hltBTagCaloCSVp014DoubleWithMatching", "hltDoubleJetsC100"),
+        ("PF100Dr",  "hltDoublePFJetsC100MaxDeta1p6",  "hltDoublePFJetsC100"           ,  "hltDoubleJetsC100"),   
+        
+        # 2j_2j_3b
+        ("Calo30",   "hltQuadCentralJet30",                 "hltL1sTripleJetVBFIorHTTIorDoubleJetCIorSingleJet", "hltQuadCentralJet30"),
+        ("Calo90",   "hltDoubleCentralJet90",               "hltQuadCentralJet30",                               "hltQuadCentralJet30"),
+        ("PF30",     "hltQuadPFCentralJetLooseID30",        "hltBTagCaloCSVp087Triple"                         , "hltQuadCentralJet30"),
+        ("PF90",     "hltDoublePFCentralJetLooseID90",      "hltQuadPFCentralJetLooseID30"                     , "hltQuadCentralJet30"),
+
+]:
+
+
+    jetTurnOnConfig.append(addTurnOnFilterMatch(turnOnPair[0], turnOnPair[1], turnOnPair[2], turnOnPair[3] ))
+    jetTurnOnConfig.append(addTurnOnFilterMatch(turnOnPair[0], turnOnPair[1], turnOnPair[2], turnOnPair[3],  matchBtag=True))
+
+
+
 #
-#  Calo 30
+#  Calo 
 #
 for caloPt in [30,45,90,100]:
     jetTurnOnConfig.append(addTurnOn(caloPt, isCalo=True))
     jetTurnOnConfig.append(addTurnOn(caloPt, isCalo=True, matchBtag=True))
 
+
+jetTurnOnConfig.append(add2b100L1TurnOn())
+jetTurnOnConfig.append(add2b100L1TurnOn(matchBtag=True))
 
 
 #
@@ -92,6 +179,10 @@ for caloPt in [30,45,90,100]:
 #
 jetTurnOnConfig.append(addBTagTurnOn())
 jetTurnOnConfig.append(addBTagTurnOn(matchBtag=True))
+
+jetTurnOnConfig.append(addBTagTurnOn(is2b100=True, ))
+jetTurnOnConfig.append(addBTagTurnOn(is2b100=True, matchBtag=True))
+
 
 #
 #  MC True
@@ -124,10 +215,72 @@ triggerConfig_EMuPFBtagDeepCSV = cms.VPSet(
 #
 
 
+
+    cms.PSet(filterName = cms.string("hltL1sQuadJetC50IorQuadJetC60IorHTT280IorHTT300IorHTT320IorTripleJet846848VBFIorTripleJet887256VBFIorTripleJet927664VBF"),
+             histName = cms.string("L1ORAll"),
+             mult = cms.uint32(1),
+             pt = cms.double(-1.0)),
+
+    cms.PSet(filterName = cms.string("hltL1sDoubleJetC100IorDoubleJetC112IorDoubleJetC120IorSingleJet200"),
+             histName = cms.string("L1ORAll_2b"),
+             mult = cms.uint32(1),
+             pt = cms.double(-1.0)),
+
+
+
+    cms.PSet(filterName = cms.string("hltL1sTripleJetVBFIorHTTIorDoubleJetCIorSingleJet"),
+             histName = cms.string("L1ORAll_2j_2j_3b"),
+             mult = cms.uint32(1),
+             pt = cms.double(-1.0)),
+
+    cms.PSet(filterName = cms.string("hltBTagCaloCSVp087Triple"),
+             histName = cms.string("3CaloBtags"),
+             mult = cms.uint32(3),
+             pt = cms.double(-1)),
+
+
     cms.PSet(filterName = cms.string("hltQuadCentralJet45"),
              histName = cms.string("4Calo45"),
              mult = cms.uint32(4),
              pt = cms.double(-1.0)),
+
+    cms.PSet(filterName = cms.string("hltDoubleJetsC100"),
+             histName = cms.string("2Calo100"),
+             mult = cms.uint32(2),
+             pt = cms.double(-1.0)),
+
+
+    cms.PSet(filterName = cms.string("hltBTagCaloCSVp014DoubleWithMatching"),
+             histName = cms.string("2CaloBTags"),
+             mult = cms.uint32(2),
+             pt = cms.double(-1)),
+
+    cms.PSet(filterName = cms.string("hltDoublePFJetsC100"),
+             histName = cms.string("2PF100"),
+             mult = cms.uint32(2),
+             pt = cms.double(100)),
+
+
+    cms.PSet(filterName = cms.string("hltQuadCentralJet30"),
+             histName = cms.string("4Calo30"),
+             mult = cms.uint32(4),
+             pt = cms.double(-1.0)),
+
+    cms.PSet(filterName = cms.string("hltDoubleCentralJet90"),
+             histName = cms.string("2Calo90"),
+             mult = cms.uint32(2),
+             pt = cms.double(-1.0)),
+    
+    cms.PSet(filterName = cms.string("hltBTagCaloCSVp087Triple"),
+             histName = cms.string("3CaloBtags"),
+             mult = cms.uint32(3),
+             pt = cms.double(-1)),
+    
+    cms.PSet(filterName = cms.string("hltQuadPFCentralJetLooseID30"),
+             histName = cms.string("4PF30"),
+             mult = cms.uint32(4),
+             pt = cms.double(30)),
+
 
 )
 

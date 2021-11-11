@@ -56,7 +56,14 @@ if options.isMC:
     )
 else:
     process.source = cms.Source("PoolSource",
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016B/MuonEG/MINIAOD/ver2_HIPM_UL2016_MiniAODv2-v2/140000/AA23D6D5-F70C-2046-A77E-BA77B387F8DD.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016C/MuonEG/MINIAOD/HIPM_UL2016_MiniAODv2-v2/120000/0B03BC72-1859-D446-99C7-21771DB8A704.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016D/MuonEG/MINIAOD/HIPM_UL2016_MiniAODv2-v2/280000/3AA0F7CA-9551-664F-9307-F97B1A53E594.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016E/MuonEG/MINIAOD/HIPM_UL2016_MiniAODv2-v2/270000/BDABA98F-CEC1-2346-9A06-2702BF3DE36D.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016F/MuonEG/MINIAOD/HIPM_UL2016_MiniAODv2-v2/280000/4287645F-FF43-0249-AF58-F0441618E525.root")
                                 fileNames = cms.untracked.vstring("/store/data/Run2016G/MuonEG/MINIAOD/UL2016_MiniAODv2-v2/280000/8E2B9D2B-948E-5143-AB8E-AB50E9B7032C.root")
+                                ###fileNames = cms.untracked.vstring("/store/data/Run2016H/MuonEG/MINIAOD/UL2016_MiniAODv2-v2/270000/16B758EF-0116-BC4D-BD82-4337C45927FE.root") 
+                                
     )
 
 
@@ -289,13 +296,13 @@ triggerStudyBase_EMuPFBtagDeepCSV.electronIdMap = cms.InputTag("egmGsfElectronID
 triggerStudyBase_EMuPFBtagDeepCSV.muonColl = cms.InputTag("slimmedMuons")
 triggerStudyBase_EMuPFBtagDeepCSV.metColl = cms.InputTag("slimmedMETs")
 
-from CMSSWTools.TrigTools.TurnOns_4j_3b_2016       import  triggerConfigL1Unprescaled_4j_3b
-from CMSSWTools.TrigTools.TurnOns_2b100_2016       import  triggerConfigL1Unprescaled_2b100
-from CMSSWTools.TrigTools.TurnOns_2j_2j_3b_2016    import  triggerConfigL1Unprescaled_2j_2j_3b
+from CMSSWTools.TrigTools.TurnOns_4j_3b_2016       import  triggerConfigL1Unprescaled_4j_3b, triggerConfig_4j_3b
+from CMSSWTools.TrigTools.TurnOns_2b100_2016       import  triggerConfigL1Unprescaled_2b100, triggerConfig_2b100
+from CMSSWTools.TrigTools.TurnOns_2j_2j_3b_2016    import  triggerConfigL1Unprescaled_2j_2j_3b, triggerConfig_2j_2j_3b
 
 hltSeeds = [("",     cms.vstring()),   
-            ("PreSelEMu_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v")),
-            ("PreSelEMu_noDZ",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v")),
+            ("PreSelEMu_",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v")),   # Not in: B C D E
+            ("PreSelEMu_noDZ",cms.vstring("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v")),  # Not in: H
             ]
 
 
@@ -303,6 +310,9 @@ L1Seeds_EMuPFBtagDeepCSV = [("HLT_EMu",                     triggerConfig_EMuPFB
                             ("HLT_4j_3b",                   triggerConfigL1Unprescaled_4j_3b, False),
                             ("HLT_2b100",                   triggerConfigL1Unprescaled_2b100, False),
                             ("HLT_2j_2j_3b",                triggerConfigL1Unprescaled_2j_2j_3b, False),
+                            ("HLT_4j_3b_L1OR",              triggerConfig_4j_3b, False),
+                            ("HLT_2b100_L1OR",              triggerConfig_2b100, False),
+                            ("HLT_2j_2j_3b_L1OR",           triggerConfig_2j_2j_3b, False),
                             
                         ]
 
@@ -310,13 +320,32 @@ offlinePreSelection = [("",             cms.PSet(minNSelMuon = cms.uint32(0)), F
 
                        ("_offEMu",      cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1)), True),
 
-                       ("_offEmu2Jet",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                       ("_offEMu2Jet",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
                                                  minNSelJet = cms.uint32(2)), True),
 
-                       ("_offEmu2Tag",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                       ("_offEMu2Tag",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
                                                  minNSelJet = cms.uint32(2),
                                                  minNTagJet = cms.uint32(2)),True), 
+
+                       ("_offEMu3Jet",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                    minNSelJet = cms.uint32(3)), False),
+
+                       ("_offEMu3Jet2Tag",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                        minNSelJet = cms.uint32(3),
+                                                        minNTagJet = cms.uint32(2)), False),
+                                                    
+
+                       ("_offEMu4Jet",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                    minNSelJet = cms.uint32(4)), False),
+
+                       ("_offEMu4Jet2Tag",     cms.PSet(minNSelMuon = cms.uint32(1), minNSelElec = cms.uint32(1),
+                                                        minNSelJet = cms.uint32(4),
+                                                        minNTagJet = cms.uint32(2)), False),
+
+
                    ]
+
+
 
 process.analyzerSeq = cms.Sequence( )
 #process.p = cms.Path()
