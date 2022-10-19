@@ -19,6 +19,7 @@
 <use   name="DataFormats/CaloTowers"/>
 <use   name="TriggerEmulator/nTupleAnalysis"/>
 <use name="RecoEgamma/EgammaTools"/>
+<use name="CommonTools/Egamma"/>
 <export>
   <lib   name="1"/>
 </export>

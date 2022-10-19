@@ -34,7 +34,7 @@
 #include <iostream>
 #include <math.h>
 #include <array>
-#include "RecoEgamma/EgammaTools/interface/ConversionTools.h"
+#include "CommonTools/Egamma/interface/ConversionTools.h"
 #include "DataFormats/EgammaCandidates/interface/ConversionFwd.h"
 #include "DataFormats/EgammaCandidates/interface/Conversion.h"
 #include <math.h>
@@ -758,7 +758,7 @@ void TriggerStudy::setupTrigEmulator(std::string year){
   cout << "Making Emulator for year" << year << endl;
     
   if(year == "2018"){
-    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year);
+    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 100, year);
 
     trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_Ht330_4j_3b});
     trigEmulatorDetails->AddTrig("EMU_CaloHt320",  {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320});
@@ -786,7 +786,7 @@ void TriggerStudy::setupTrigEmulator(std::string year){
 
 
 
-    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year);
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 100, year);
     trigEmulator->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
     //trigEmulator->AddTrig("EMU_2b116",    {},  {"L1112TandPDenMatch",jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
     trigEmulator->AddTrig("EMU_2b116",    {hTTurnOn::L1ORAll_2b116},  {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
@@ -794,7 +794,7 @@ void TriggerStudy::setupTrigEmulator(std::string year){
 
   if(year == "2017"){
 
-    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year);
+    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 100, year);
 
     trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_Ht300_4j_3b});
     trigEmulatorDetails->AddTrig("EMU_CaloHt300",  {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300});
@@ -822,7 +822,7 @@ void TriggerStudy::setupTrigEmulator(std::string year){
 
 
 
-    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year);
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 100, year);
     trigEmulator->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
     //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandP",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
     trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
@@ -833,7 +833,7 @@ void TriggerStudy::setupTrigEmulator(std::string year){
 
   if(year == "2016"){
 
-    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 1, 100, year);
+    trigEmulatorDetails = new TriggerEmulator::TrigEmulatorTool("trigEmulatorDetails", 100, year);
 
     trigEmulatorDetails->AddTrig("EMU_L1ORAll",    {hTTurnOn::L1ORAll_4j_3b});
     trigEmulatorDetails->AddTrig("EMU_4Calo45",    {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45},{4});
@@ -861,7 +861,7 @@ void TriggerStudy::setupTrigEmulator(std::string year){
     trigEmulatorDetails->AddTrig("EMU_2j_2j_3b",               {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
 
 
-    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 100, year);
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 100, year);
     trigEmulator->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
     //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandPDenMatch",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
     trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
